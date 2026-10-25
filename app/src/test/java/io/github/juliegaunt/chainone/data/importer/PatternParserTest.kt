@@ -107,6 +107,19 @@ class PatternParserTest {
     }
 
     @Test
+    fun instructionsHeadingWinsOverTitleRepeatedAsHeading() {
+        val parsed = PatternParser.parse(page("title-heading-first"))
+
+        assertTrue(parsed.foundInstructions)
+        val lines = parsed.instructions.lines()
+        // Not the copyright note under the repeated title, and not cut short at "Pin it for later".
+        assertEquals("## Instructions", lines.first())
+        assertTrue(lines.contains("1. Ch8. Hdc in 2nd ch from hook and each ch across. Turn. – 7 st"))
+        assertEquals("2. Ch3. Dc in next st and each st around. Ss to top of ch3. – 30 st", lines.last())
+        assertEquals("- Worsted weight yarn, about 90 yds\n- 5mm Hook", parsed.materials)
+    }
+
+    @Test
     fun labeledFieldsAreRead() {
         val parsed = PatternParser.parse(page("labeled-fields"))
 

@@ -43,18 +43,30 @@ object PatternParser {
         """\b(materials|supplies|you\s*(?:'|’)?ll\s+need|you\s+will\s+need|what\s+you\s+need|tools)\b""",
         RegexOption.IGNORE_CASE,
     )
+    /** Headings that clearly start the instructions. */
     private val INSTRUCTIONS_HEADING = Regex(
-        """\b(pattern|instructions|directions|how\s+to\s+(make|crochet))\b""",
-        RegexOption.IGNORE_CASE,
-    )
-    private val NOT_INSTRUCTIONS_HEADING = Regex(
-        """\b(more|related|similar|other|also\s+like|comments?|reply|share|pin)\b""",
+        """\b(instructions|directions|how\s+to\s+(make|crochet)|let'?s\s+(begin|start|get\s+started))\b""",
         RegexOption.IGNORE_CASE,
     )
 
+    /** "Pattern" headings are tried only after those: blogs often repeat the title ("… Crochet Pattern") as a heading. */
+    private val PATTERN_HEADING = Regex("""\bpattern\b""", RegexOption.IGNORE_CASE)
+
+    /** Headings that mark the end of the post rather than part of the pattern. */
+    private val END_HEADING = Regex(
+        """\b(comments?|leave\s+a\s+reply|related|similar|you\s+(may|might|will)\s+(also\s+)?(like|love)|""" +
+            """more\s+(free\s+)?(crochet\s+)?patterns|other\s+(patterns|designs))\b""",
+        RegexOption.IGNORE_CASE,
+    )
+
+    /** Headings that never start the instructions, such as "Pin it for later" or "Share". */
+    private val NOT_A_START = Regex("""\b(pin|share|save|more|related|similar|other|also|comments?)\b""", RegexOption.IGNORE_CASE)
+
     private val ROW_MARKER = Regex("""\b(row|rnd|round|r)\s*\d+""", RegexOption.IGNORE_CASE)
+
+    // Abbreviations may have a count attached, as in "Ch6" or "ch3".
     private val STITCH = Regex(
-        """\b(sc|dc|hdc|tr|dtr|ch|sl\s?st|sts?|inc|dec|sc2tog|dc2tog|hdc2tog|yo|fpdc|bpdc|blo|flo|mr)\b""",
+        """\b(sc|dc|hdc|tr|dtr|ch|sl\s?st|ss|sts?|inc|dec|sc2tog|dc2tog|hdc2tog|yo|fpdc|bpdc|blo|flo|mr|sk)\d*\b""",
         RegexOption.IGNORE_CASE,
     )
     private val TITLE_SEPARATORS = listOf(" | ", " - ", " – ", " — ", " · ", " :: ")
@@ -128,16 +140,23 @@ object PatternParser {
         ROW_MARKER.findAll(text).count() >= 2 || STITCH.findAll(text).count() >= 8
 
     /**
-     * The article from its first "Pattern"/"Instructions" heading onwards (or the whole article
-     * if there is none), stopping at "More patterns", "Comments" and the like.
+     * The article from its instructions heading onwards, stopping at "More patterns", "Comments"
+     * and the like. "Instructions"-style headings are tried before "Pattern" ones, and the first
+     * that leads to something that reads like crochet wins. Falls back to the whole article.
      */
     private fun articleInstructions(lines: List<String>): String {
-        val start = lines.indexOfFirst {
-            isSectionStart(it, INSTRUCTIONS_HEADING) && !isSectionStart(it, MATERIALS_HEADING) &&
-                !NOT_INSTRUCTIONS_HEADING.containsMatchIn(it)
+        fun startsAt(heading: Regex) = lines.indices.filter { i ->
+            val line = lines[i]
+            isSectionStart(line, heading) && !isSectionStart(line, MATERIALS_HEADING) && !NOT_A_START.containsMatchIn(line)
         }
-        val fromStart = if (start >= 0) lines.drop(start) else lines
-        val end = fromStart.drop(1).indexOfFirst { it.startsWith("## ") && NOT_INSTRUCTIONS_HEADING.containsMatchIn(it) }
+        val starts = (startsAt(INSTRUCTIONS_HEADING) + startsAt(PATTERN_HEADING)).distinct()
+        return starts.asSequence().map { sliceFrom(lines, it) }.firstOrNull(::looksLikePattern)
+            ?: sliceFrom(lines, 0)
+    }
+
+    private fun sliceFrom(lines: List<String>, start: Int): String {
+        val fromStart = lines.drop(start)
+        val end = fromStart.drop(1).indexOfFirst { it.startsWith("## ") && END_HEADING.containsMatchIn(it) }
         return (if (end >= 0) fromStart.take(end + 1) else fromStart).joinToString("\n").trim()
     }
 
