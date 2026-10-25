@@ -1,3 +1,5 @@
+<img src="design/chain-one-logo.svg" alt="Chain One logo" width="96">
+
 # Chain One
 
 A personal crochet pattern library for Android, with a built-in row counter.
@@ -83,6 +85,7 @@ app/src/main/java/io/github/juliegaunt/chainone/
 └── ui/               Jetpack Compose screens, one folder per screen
 app/src/test/         Unit tests (run on your computer)
 app/schemas/          Database schema history, used for future upgrades
+design/               Logo source files (the app's icon and title are converted from the SVG)
 ```
 
 The app uses Kotlin, Jetpack Compose (Material 3), Room, Coil and (for web import) Jsoup.

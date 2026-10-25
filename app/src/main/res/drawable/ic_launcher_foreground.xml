@@ -1,21 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- A ball of yarn with a loose tail. Drawn inside the 66dp adaptive-icon safe zone. -->
+<!--
+  The "ch1" logo (design/chain-one-logo.svg) for the app icon. Scaled to about 52 of the
+  108dp canvas and centred, so no phone's icon shape (circle, squircle, …) clips it.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path
-        android:fillColor="@color/ic_launcher_yarn"
-        android:pathData="M52,30a22,22 0,1 1,0 44a22,22 0,1 1,0 -44z" />
-    <path
-        android:strokeColor="@color/ic_launcher_background"
-        android:strokeWidth="2.5"
-        android:strokeLineCap="round"
-        android:pathData="M36,40Q54,52 42,72M44,32Q66,48 56,74M60,32Q74,44 72,58M31,54Q48,46 68,36" />
-    <path
-        android:strokeColor="@color/ic_launcher_yarn"
-        android:strokeWidth="3"
-        android:strokeLineCap="round"
-        android:pathData="M70,64Q80,70 76,78Q73,84 80,86" />
+    <group
+        android:scaleX="0.45"
+        android:scaleY="0.45"
+        android:translateX="15.3"
+        android:translateY="13.14">
+        <path
+            android:pathData="M70 102 C68 94, 60 90, 52 91 C40 92, 32 104, 32 116 C30 134, 50 142, 68 128 C80 116, 100 76, 102 54 C104 38, 88 36, 88 56 L88 140 C88 118, 94 104, 106 104 C118 104, 120 116, 120 128 C120 143, 139 145, 140 126 L140 56 L128 68"
+            android:strokeColor="@color/ic_launcher_logo"
+            android:strokeWidth="6"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+    </group>
 </vector>

@@ -83,7 +83,15 @@ fun LibraryScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.app_name)) },
+                title = {
+                    // The "ch1" logo in place of the app name; screen readers still say "Chain One".
+                    Icon(
+                        painterResource(R.drawable.ic_logo),
+                        contentDescription = stringResource(R.string.app_name),
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(44.dp),
+                    )
+                },
                 actions = {
                     IconToggleButton(
                         checked = state.favoritesOnly,

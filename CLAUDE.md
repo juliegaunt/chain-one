@@ -46,11 +46,12 @@ Offline, ad-free Android app for storing crochet patterns (from URLs and PDFs) w
 - Navigation Compose with string routes (`ui/navigation/ChainOneNavHost.kt`)
 - File paths in the DB are relative to `filesDir`, under `patterns/<id>/` (see `FileStore`)
 - UI strings go in `res/values/strings.xml`
+- Logo source is `design/chain-one-logo.svg`; `ic_logo.xml` and `ic_launcher_foreground.xml` are hand-converted from its path
 - DB tests use Robolectric (`./gradlew testDebugUnitTest`)
 - The network is used only in `data/importer/WebClient.kt`; imports wait in `cache/imports/<id>/` (`ImportStaging`) until saved from the review (edit) screen
 - Parser test pages in `app/src/test/resources/pages/` are hand-written; never commit copies of real pattern pages
 
 ## Progress
 - Milestone 1 done (all tables exist; schema v1 in `app/schemas/`)
-- Milestone 2 (URL import + share sheet) built; waiting for the owner to try it
-- Next milestone: 3 (Counter)
+- Milestone 2 done (URL import + share sheet, pink #D14D72 theme, "ch1" logo as icon and library title)
+- Current milestone: 3 (Counter)
