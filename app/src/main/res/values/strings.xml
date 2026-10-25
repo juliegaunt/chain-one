@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Chain One</string>
+
+    <!-- Shared actions -->
+    <string name="action_back">Back</string>
+    <string name="action_close">Close</string>
+    <string name="action_save">Save</string>
+    <string name="action_edit">Edit</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_more">More options</string>
+    <string name="action_discard">Discard</string>
+    <string name="action_keep_editing">Keep editing</string>
+    <string name="action_favorite">Add to favorites</string>
+    <string name="action_unfavorite">Remove from favorites</string>
+
+    <!-- Status -->
+    <string name="status_want_to_make">Want to make</string>
+    <string name="status_in_progress">In progress</string>
+    <string name="status_finished">Finished</string>
+
+    <!-- Fields -->
+    <string name="field_title">Title</string>
+    <string name="field_designer">Designer</string>
+    <string name="field_status">Status</string>
+    <string name="field_hook_size">Hook size</string>
+    <string name="field_hook_size_hint">e.g. 4 mm (G-6)</string>
+    <string name="field_yarn_weight">Yarn weight</string>
+    <string name="field_yarn_weight_hint">e.g. Worsted</string>
+    <string name="field_materials">Materials</string>
+    <string name="field_instructions">Instructions</string>
+    <string name="field_notes">Notes</string>
+    <string name="field_source_url">Source link</string>
+
+    <!-- Library -->
+    <string name="library_add_pattern">Add pattern</string>
+    <string name="library_favorites_only">Show favorites only</string>
+    <string name="library_show_list">Show as list</string>
+    <string name="library_show_grid">Show as grid</string>
+    <string name="library_empty">Your library is empty.\nTap “Add pattern” to save your first one.</string>
+    <string name="library_empty_favorites">No favorites yet.\nTap the heart on a pattern to add it here.</string>
+
+    <!-- Pattern detail -->
+    <string name="tab_overview">Overview</string>
+    <string name="tab_instructions">Instructions</string>
+    <string name="pattern_by_designer">by %1$s</string>
+    <string name="pattern_not_found">This pattern no longer exists.</string>
+    <string name="instructions_empty">No instructions yet. Tap the pencil to add them.</string>
+    <string name="delete_pattern_title">Delete pattern?</string>
+    <string name="delete_pattern_message">“%1$s” and its photos, PDFs and counters will be removed from this phone.</string>
+
+    <!-- Edit -->
+    <string name="edit_title_new">New pattern</string>
+    <string name="edit_title_existing">Edit pattern</string>
+    <string name="edit_title_required">Give the pattern a title</string>
+    <string name="edit_add_photo">Add cover photo</string>
+    <string name="edit_change_photo">Change photo</string>
+    <string name="edit_remove_photo">Remove</string>
+    <string name="edit_cover_failed">Saved, but the photo couldn’t be copied. Try picking it again.</string>
+    <string name="edit_instructions_tip">Start a line with “## ” for a heading or “- ” for a bullet.</string>
+    <string name="edit_discard_title">Discard your changes?</string>
+</resources>

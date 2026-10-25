@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A ball of yarn with a loose tail. Drawn inside the 66dp adaptive-icon safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="@color/ic_launcher_yarn"
+        android:pathData="M52,30a22,22 0,1 1,0 44a22,22 0,1 1,0 -44z" />
+    <path
+        android:strokeColor="@color/ic_launcher_background"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:pathData="M36,40Q54,52 42,72M44,32Q66,48 56,74M60,32Q74,44 72,58M31,54Q48,46 68,36" />
+    <path
+        android:strokeColor="@color/ic_launcher_yarn"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M70,64Q80,70 76,78Q73,84 80,86" />
+</vector>
