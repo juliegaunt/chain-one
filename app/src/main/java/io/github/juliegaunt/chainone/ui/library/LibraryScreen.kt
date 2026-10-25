@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -54,6 +55,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.juliegaunt.chainone.R
@@ -108,13 +110,19 @@ fun LibraryScreen(
             )
         },
         floatingActionButton = {
+            // Shorter than the standard 56dp, with text sized to fill it; 48dp is still easy to tap.
             ExtendedFloatingActionButton(
                 onClick = { showAddChoices = true },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
-                // Larger than the default label so the text fills the button.
-                icon = { Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(28.dp)) },
-                text = { Text(stringResource(R.string.library_add_pattern), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium)) },
+                modifier = Modifier.height(48.dp),
+                icon = { Icon(Icons.Filled.Add, contentDescription = null) },
+                text = {
+                    Text(
+                        stringResource(R.string.library_add_pattern),
+                        style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp, fontWeight = FontWeight.Medium),
+                    )
+                },
             )
         },
     ) { padding ->
