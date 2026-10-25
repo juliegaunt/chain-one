@@ -50,6 +50,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -111,8 +112,9 @@ fun LibraryScreen(
                 onClick = { showAddChoices = true },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
-                icon = { Icon(Icons.Filled.Add, contentDescription = null) },
-                text = { Text(stringResource(R.string.library_add_pattern)) },
+                // Larger than the default label so the text fills the button.
+                icon = { Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(28.dp)) },
+                text = { Text(stringResource(R.string.library_add_pattern), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium)) },
             )
         },
     ) { padding ->
