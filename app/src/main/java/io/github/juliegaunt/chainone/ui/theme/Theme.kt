@@ -9,49 +9,68 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
-// A purple palette (Material's baseline violet tones), used on every phone so the app always looks the same.
+// A pink palette built around #D14D72 (the button color), using Material's tonal steps for the
+// lighter and darker shades. Used on every phone so the app always looks the same.
 private val LightColors = lightColorScheme(
-    primary = Color(0xFF6750A4),
+    primary = Color(0xFFD14D72),
     onPrimary = Color(0xFFFFFFFF),
-    primaryContainer = Color(0xFFEADDFF),
-    onPrimaryContainer = Color(0xFF21005D),
-    secondary = Color(0xFF625B71),
+    primaryContainer = Color(0xFFFFD9DF),
+    onPrimaryContainer = Color(0xFF3F0017),
+    secondary = Color(0xFF75565C),
     onSecondary = Color(0xFFFFFFFF),
-    secondaryContainer = Color(0xFFE8DEF8),
-    onSecondaryContainer = Color(0xFF1D192B),
-    tertiary = Color(0xFF7D5260),
+    secondaryContainer = Color(0xFFFFD9DF),
+    onSecondaryContainer = Color(0xFF2B151A),
+    tertiary = Color(0xFF7A5732),
     onTertiary = Color(0xFFFFFFFF),
-    tertiaryContainer = Color(0xFFFFD8E4),
-    onTertiaryContainer = Color(0xFF31111D),
-    background = Color(0xFFFFFBFE),
-    onBackground = Color(0xFF1C1B1F),
-    surface = Color(0xFFFFFBFE),
-    onSurface = Color(0xFF1C1B1F),
-    surfaceVariant = Color(0xFFE7E0EC),
-    onSurfaceVariant = Color(0xFF49454F),
-    outline = Color(0xFF79747E),
+    tertiaryContainer = Color(0xFFFFDCBC),
+    onTertiaryContainer = Color(0xFF2C1700),
+    background = Color(0xFFFFFBFF),
+    onBackground = Color(0xFF201A1B),
+    surface = Color(0xFFFFFBFF),
+    onSurface = Color(0xFF201A1B),
+    surfaceVariant = Color(0xFFF3DDE0),
+    onSurfaceVariant = Color(0xFF524345),
+    outline = Color(0xFF847375),
+    outlineVariant = Color(0xFFD6C2C4),
+    surfaceContainerLowest = Color(0xFFFFFFFF),
+    surfaceContainerLow = Color(0xFFFDF1F1),
+    surfaceContainer = Color(0xFFF8EBEC),
+    surfaceContainerHigh = Color(0xFFF2E5E6),
+    surfaceContainerHighest = Color(0xFFECE0E0),
+    inverseSurface = Color(0xFF352F30),
+    inverseOnSurface = Color(0xFFFAEEEF),
+    inversePrimary = Color(0xFFFFB1C0),
 )
 
 private val DarkColors = darkColorScheme(
-    primary = Color(0xFFD0BCFF),
-    onPrimary = Color(0xFF381E72),
-    primaryContainer = Color(0xFF4F378B),
-    onPrimaryContainer = Color(0xFFEADDFF),
-    secondary = Color(0xFFCCC2DC),
-    onSecondary = Color(0xFF332D41),
-    secondaryContainer = Color(0xFF4A4458),
-    onSecondaryContainer = Color(0xFFE8DEF8),
-    tertiary = Color(0xFFEFB8C8),
-    onTertiary = Color(0xFF492532),
-    tertiaryContainer = Color(0xFF633B48),
-    onTertiaryContainer = Color(0xFFFFD8E4),
-    background = Color(0xFF1C1B1F),
-    onBackground = Color(0xFFE6E1E5),
-    surface = Color(0xFF1C1B1F),
-    onSurface = Color(0xFFE6E1E5),
-    surfaceVariant = Color(0xFF49454F),
-    onSurfaceVariant = Color(0xFFCAC4D0),
-    outline = Color(0xFF938F99),
+    primary = Color(0xFFFFB1C0),
+    onPrimary = Color(0xFF660029),
+    primaryContainer = Color(0xFF8A143E),
+    onPrimaryContainer = Color(0xFFFFD9DF),
+    secondary = Color(0xFFE4BDC3),
+    onSecondary = Color(0xFF43292E),
+    secondaryContainer = Color(0xFF5B3F44),
+    onSecondaryContainer = Color(0xFFFFD9DF),
+    tertiary = Color(0xFFECBE91),
+    onTertiary = Color(0xFF462A09),
+    tertiaryContainer = Color(0xFF60401D),
+    onTertiaryContainer = Color(0xFFFFDCBC),
+    background = Color(0xFF171213),
+    onBackground = Color(0xFFECE0E0),
+    surface = Color(0xFF171213),
+    onSurface = Color(0xFFECE0E0),
+    surfaceVariant = Color(0xFF524345),
+    onSurfaceVariant = Color(0xFFD6C2C4),
+    outline = Color(0xFF9F8C8F),
+    outlineVariant = Color(0xFF524345),
+    surfaceContainerLowest = Color(0xFF120D0E),
+    surfaceContainerLow = Color(0xFF201A1B),
+    surfaceContainer = Color(0xFF241E1F),
+    surfaceContainerHigh = Color(0xFF2F2829),
+    surfaceContainerHighest = Color(0xFF3A3334),
+    inverseSurface = Color(0xFFECE0E0),
+    inverseOnSurface = Color(0xFF352F30),
+    inversePrimary = Color(0xFFAA2F55),
 )
 
 /** Colors for one pattern status: [container] fills a selected chip, [accent] outlines an unselected one. */
@@ -59,15 +78,15 @@ data class StatusColor(val container: Color, val content: Color, val accent: Col
 
 data class StatusColors(val wantToMake: StatusColor, val inProgress: StatusColor, val finished: StatusColor)
 
-// Want to make is purple, In progress amber, Finished green.
+// Want to make is pink (the app's main color), In progress amber, Finished green.
 private val LightStatusColors = StatusColors(
-    wantToMake = StatusColor(container = Color(0xFFEADDFF), content = Color(0xFF21005D), accent = Color(0xFF6750A4)),
+    wantToMake = StatusColor(container = Color(0xFFFFD9DF), content = Color(0xFF3F0017), accent = Color(0xFFD14D72)),
     inProgress = StatusColor(container = Color(0xFFFFDDB3), content = Color(0xFF291800), accent = Color(0xFF8B5000)),
     finished = StatusColor(container = Color(0xFFC3EFC6), content = Color(0xFF002109), accent = Color(0xFF2E6B30)),
 )
 
 private val DarkStatusColors = StatusColors(
-    wantToMake = StatusColor(container = Color(0xFF4F378B), content = Color(0xFFEADDFF), accent = Color(0xFFD0BCFF)),
+    wantToMake = StatusColor(container = Color(0xFF8A143E), content = Color(0xFFFFD9DF), accent = Color(0xFFFFB1C0)),
     inProgress = StatusColor(container = Color(0xFF693C00), content = Color(0xFFFFDDB3), accent = Color(0xFFFFB95C)),
     finished = StatusColor(container = Color(0xFF145221), content = Color(0xFFC3EFC6), accent = Color(0xFF8FD694)),
 )

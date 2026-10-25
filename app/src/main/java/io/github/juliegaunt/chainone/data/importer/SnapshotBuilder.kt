@@ -25,20 +25,20 @@ object SnapshotBuilder {
     private val STYLE = """
         :root { color-scheme: light dark; }
         body { font-family: sans-serif; font-size: 17px; line-height: 1.55; margin: 0 auto; padding: 8px 16px 32px;
-               max-width: 760px; color: #1C1B1F; background: #FFFBFE; overflow-wrap: break-word; }
-        a { color: #6750A4; }
+               max-width: 760px; color: #201A1B; background: #FFFBFF; overflow-wrap: break-word; }
+        a { color: #D14D72; }
         img { max-width: 100%; height: auto; border-radius: 8px; }
         figure { margin: 16px 0; }
         table { border-collapse: collapse; width: 100%; }
-        td, th { border: 1px solid #CAC4D0; padding: 4px 8px; text-align: left; }
-        header { border-bottom: 1px solid #CAC4D0; margin-bottom: 16px; }
+        td, th { border: 1px solid #D6C2C4; padding: 4px 8px; text-align: left; }
+        header { border-bottom: 1px solid #D6C2C4; margin-bottom: 16px; }
         header h1 { font-size: 24px; line-height: 1.25; margin: 16px 0 4px; }
-        header p { color: #49454F; font-size: 14px; margin: 0 0 12px; }
+        header p { color: #524345; font-size: 14px; margin: 0 0 12px; }
         @media (prefers-color-scheme: dark) {
-            body { color: #E6E1E5; background: #1C1B1F; }
-            a { color: #D0BCFF; }
-            td, th, header { border-color: #49454F; }
-            header p { color: #CAC4D0; }
+            body { color: #ECE0E0; background: #171213; }
+            a { color: #FFB1C0; }
+            td, th, header { border-color: #524345; }
+            header p { color: #D6C2C4; }
         }
     """.trimIndent()
 
