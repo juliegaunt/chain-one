@@ -74,7 +74,8 @@
     <string name="review_missing">Not found on the page: %1$s.</string>
     <string name="review_no_instructions">Couldn’t pick out the instructions. The whole page is saved with the pattern, on its Web page tab.</string>
     <string name="review_page_saved">A copy of the web page is saved too, on the pattern’s Web page tab.</string>
-    <string name="review_list_separator">, </string>
+    <!-- Quoted so Android keeps the space after the comma. -->
+    <string name="review_list_separator">", "</string>
 
     <!-- Import from a website -->
     <string name="import_title">Import from a website</string>

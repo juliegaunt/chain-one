@@ -41,7 +41,7 @@ class JsoupWebClient : WebClient {
 
     override suspend fun fetchPage(url: String): Document = withContext(Dispatchers.IO) {
         val response = try {
-            connect(url).maxBodySize(MAX_PAGE_BYTES).execute()
+            execute(url, MAX_PAGE_BYTES)
         } catch (e: IOException) {
             throw ImportException(problemFor(e), e)
         } catch (e: IllegalArgumentException) {
@@ -50,7 +50,7 @@ class JsoupWebClient : WebClient {
 
         when (response.statusCode()) {
             in 200..299 -> Unit
-            401, 403, 429, 451 -> throw ImportException(ImportProblem.BLOCKED)
+            in REFUSED -> throw ImportException(ImportProblem.BLOCKED)
             404, 410 -> throw ImportException(ImportProblem.NOT_FOUND)
             else -> throw ImportException(ImportProblem.SERVER_ERROR)
         }
@@ -70,7 +70,7 @@ class JsoupWebClient : WebClient {
     override suspend fun download(url: String, maxBytes: Int): Download? = withContext(Dispatchers.IO) {
         try {
             // One byte over the limit tells a too-large file apart from one exactly at it.
-            val response = connect(url).maxBodySize(maxBytes + 1).execute()
+            val response = execute(url, maxBytes + 1)
             val bytes = response.bodyAsBytes()
             if (response.statusCode() !in 200..299 || bytes.size > maxBytes) return@withContext null
             Download(bytes, response.contentType().orEmpty().lowercase())
@@ -81,9 +81,19 @@ class JsoupWebClient : WebClient {
         }
     }
 
-    private fun connect(url: String): Connection = Jsoup.connect(url)
-        // Many pattern sites turn away requests that don't look like a phone browser.
-        .userAgent(USER_AGENT)
+    /**
+     * Asks as Chain One first, then, if the site refuses, as a phone browser. Sites behind
+     * Cloudflare often block a phone that claims to be Chrome but doesn't connect like Chrome;
+     * other sites turn away anything that doesn't look like a browser.
+     */
+    private fun execute(url: String, maxBytes: Int): Connection.Response {
+        val response = connect(url, APP_USER_AGENT).maxBodySize(maxBytes).execute()
+        if (response.statusCode() !in REFUSED) return response
+        return connect(url, BROWSER_USER_AGENT).maxBodySize(maxBytes).execute()
+    }
+
+    private fun connect(url: String, userAgent: String): Connection = Jsoup.connect(url)
+        .userAgent(userAgent)
         .header("Accept-Language", "en")
         .timeout(TIMEOUT_MS)
         .followRedirects(true)
@@ -98,8 +108,12 @@ class JsoupWebClient : WebClient {
     }
 
     private companion object {
-        const val USER_AGENT =
+        const val APP_USER_AGENT = "ChainOne (Android; pattern import)"
+        const val BROWSER_USER_AGENT =
             "Mozilla/5.0 (Linux; Android 15) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Mobile Safari/537.36"
+
+        /** Answers that mean "not for you" (rather than "not found"); 503 is also Cloudflare's challenge page. */
+        val REFUSED = setOf(401, 403, 429, 451, 503)
         const val TIMEOUT_MS = 20_000
         const val MAX_PAGE_BYTES = 8 * 1024 * 1024
     }
