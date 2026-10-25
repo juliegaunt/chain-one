@@ -45,6 +45,36 @@ class FileStore(
         }
     }
 
+    /**
+     * Moves a file that's already on the phone (such as a downloaded photo) into the pattern's
+     * folder and returns its new relative path.
+     */
+    suspend fun adoptIntoPattern(patternId: Long, file: File, baseName: String): String = withContext(Dispatchers.IO) {
+        val dir = patternDir(patternId).apply { mkdirs() }
+        val target = File(dir, "$baseName-${UUID.randomUUID().toString().take(8)}.${file.extension.ifEmpty { "bin" }}")
+        moveOrCopy(file, target)
+        target.relativeTo(root).path
+    }
+
+    /**
+     * Moves a saved copy of a web page (a folder holding `index.html` and its photos) into the
+     * pattern's folder, replacing any earlier copy. Returns the relative path of `index.html`.
+     */
+    suspend fun adoptSnapshot(patternId: Long, folder: File, pageName: String): String = withContext(Dispatchers.IO) {
+        val target = File(patternDir(patternId), SNAPSHOT_DIR)
+        target.deleteRecursively()
+        target.parentFile?.mkdirs()
+        moveOrCopy(folder, target)
+        File(target, pageName).relativeTo(root).path
+    }
+
+    /** Renaming is instant; copying is the fallback if the two places are on different storage. */
+    private fun moveOrCopy(source: File, target: File) {
+        if (source.renameTo(target)) return
+        if (!source.copyRecursively(target, overwrite = true)) throw IOException("Could not copy $source")
+        source.deleteRecursively()
+    }
+
     suspend fun delete(relativePath: String) = withContext(Dispatchers.IO) {
         resolve(relativePath).delete()
     }
@@ -63,5 +93,6 @@ class FileStore(
 
     companion object {
         const val PATTERNS_DIR = "patterns"
+        private const val SNAPSHOT_DIR = "snapshot"
     }
 }

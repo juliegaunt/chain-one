@@ -23,6 +23,8 @@ import java.io.File
 data class PatternDetailUiState(
     val pattern: Pattern? = null,
     val cover: File? = null,
+    /** The saved copy of the pattern's web page, if it was imported from one. */
+    val savedPage: File? = null,
     val isLoading: Boolean = true,
     /** Set once the pattern has been deleted, so the screen can close itself. */
     val isDeleted: Boolean = false,
@@ -44,6 +46,7 @@ class PatternDetailViewModel(
         PatternDetailUiState(
             pattern = pattern,
             cover = fileStore.coverFile(pattern?.coverImagePath),
+            savedPage = pattern?.snapshotPath?.let(fileStore::resolve),
             isLoading = false,
             isDeleted = deleted,
         )

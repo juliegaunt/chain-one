@@ -35,6 +35,10 @@
 
     <!-- Library -->
     <string name="library_add_pattern">Add pattern</string>
+    <string name="library_add_from_web">From a website</string>
+    <string name="library_add_from_web_hint">Paste a link and Chain One fills in the details</string>
+    <string name="library_add_manually">Type it in</string>
+    <string name="library_add_manually_hint">Start with a blank pattern</string>
     <string name="library_favorites_only">Show favorites only</string>
     <string name="library_show_list">Show as list</string>
     <string name="library_show_grid">Show as grid</string>
@@ -44,6 +48,7 @@
     <!-- Pattern detail -->
     <string name="tab_overview">Overview</string>
     <string name="tab_instructions">Instructions</string>
+    <string name="tab_web_page">Web page</string>
     <string name="pattern_by_designer">by %1$s</string>
     <string name="pattern_not_found">This pattern no longer exists.</string>
     <string name="instructions_empty">No instructions yet. Tap the pencil to add them.</string>
@@ -60,4 +65,41 @@
     <string name="edit_cover_failed">Saved, but the photo couldn’t be copied. Try picking it again.</string>
     <string name="edit_instructions_tip">Start a line with “## ” for a heading or “- ” for a bullet.</string>
     <string name="edit_discard_title">Discard your changes?</string>
+    <string name="edit_discard_import_title">Discard this import?</string>
+    <string name="edit_files_failed">Saved, but the photo or page copy couldn’t be stored.</string>
+
+    <!-- Review an import -->
+    <string name="review_heading">Check the details</string>
+    <string name="review_intro">Imported from %1$s. Fix anything that looks wrong, then tap Save.</string>
+    <string name="review_missing">Not found on the page: %1$s.</string>
+    <string name="review_no_instructions">Couldn’t pick out the instructions. The whole page is saved with the pattern, on its Web page tab.</string>
+    <string name="review_page_saved">A copy of the web page is saved too, on the pattern’s Web page tab.</string>
+    <string name="review_list_separator">, </string>
+
+    <!-- Import from a website -->
+    <string name="import_title">Import from a website</string>
+    <string name="import_url_label">Link to the pattern</string>
+    <string name="import_paste">Paste</string>
+    <string name="import_button">Import</string>
+    <string name="import_tip">Tip: in your browser, tap Share → Chain One to skip this step.</string>
+    <string name="import_loading">Downloading the pattern and its photos…</string>
+    <string name="import_try_again">Try again</string>
+    <string name="import_save_link_only">Save just the link</string>
+    <string name="import_duplicate_title">Already in your library</string>
+    <string name="import_duplicate_message">You saved this pattern before as “%1$s”.</string>
+    <string name="import_open_existing">Open it</string>
+    <string name="import_again">Import again</string>
+    <string name="import_error_invalid_link">That doesn’t look like a web link. Check it and try again.</string>
+    <string name="import_error_no_connection">Couldn’t reach the website. Check your internet connection and the link.</string>
+    <string name="import_error_timeout">The website took too long to answer. Try again in a moment.</string>
+    <string name="import_error_blocked">This website didn’t allow the download. You can still save the link and fill in the pattern yourself.</string>
+    <string name="import_error_not_found">The website says this page doesn’t exist. Check the link.</string>
+    <string name="import_error_server">The website had a problem. Try again later.</string>
+    <string name="import_error_pdf">This link is a PDF, not a web page. PDF import is coming in a later version.</string>
+    <string name="import_error_not_web_page">This link isn’t a web page.</string>
+    <string name="import_error_unknown">Something went wrong while importing. Try again.</string>
+    <string name="import_url_placeholder">https://…</string>
+
+    <!-- Saved copy of a web page -->
+    <string name="snapshot_caption">Saved from %1$s on %2$s</string>
 </resources>

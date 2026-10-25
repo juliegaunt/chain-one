@@ -12,9 +12,9 @@ A personal crochet pattern library for Android, with a built-in row counter.
 |---|---|
 | Library (grid or list) with cover photos and favorites | ✅ |
 | Add and edit patterns by hand | ✅ |
+| Import from a web page (paste a link or share from the browser), with an offline copy of the page | ✅ |
 | Row/stitch counters inside each pattern | Planned |
 | Import and view PDFs | Planned |
-| Import from a web page (paste a link or share from the browser) | Planned |
 | Search, tags, status filters | Planned |
 | Backup and restore to a single zip file | Planned |
 
@@ -62,6 +62,14 @@ export JAVA_HOME=/path/to/android-studio/jbr
 
 **Wireless:** on Android 11+, turn on **Wireless debugging** in Developer options, then in Android Studio use **Device Manager → Pair devices using Wi-Fi**.
 
+## Importing from a website
+
+Tap **Add pattern → From a website** and paste a link, or in your phone's browser tap **Share → Chain One**. Chain One downloads the page, fills in what it can find (title, designer, hook size, yarn weight, materials, instructions, cover photo) and shows it to you to check before anything is saved. It also keeps a cleaned-up copy of the page, with its photos, on the pattern's **Web page** tab, so the original wording stays on your phone even if the website changes or disappears.
+
+Some pages don't contain the pattern itself: video-only tutorials, directory sites that link to the designer's blog, and Ravelry listings for paid or off-site patterns. Chain One then says it couldn't find the instructions, and you still get the page copy.
+
+**Trying the share button on the emulator:** open Chrome on the emulator, go to a pattern page, tap **⋮ → Share…** and choose **Chain One**. The first time, Chain One may be under **More** in the share sheet.
+
 ## Project layout
 
 ```
@@ -69,6 +77,7 @@ app/src/main/java/io/github/juliegaunt/chainone/
 ├── data/
 │   ├── db/           Room database: tables (Entities.kt) and queries (DAOs)
 │   ├── files/        Copies photos and PDFs into app-private storage
+│   ├── importer/     Web import: downloads a page, reads the pattern out of it, saves an offline copy
 │   ├── repository/   Keeps the database and files in step
 │   └── settings/     Small UI preferences
 └── ui/               Jetpack Compose screens, one folder per screen
@@ -77,6 +86,8 @@ app/schemas/          Database schema history, used for future upgrades
 ```
 
 The app uses Kotlin, Jetpack Compose (Material 3), Room, Coil and (for web import) Jsoup.
+
+The page reader's tests run against small sample pages in `app/src/test/resources/pages/`. They're written for the tests rather than copied from real sites, since the patterns on those sites belong to their designers.
 
 ## License
 

@@ -36,6 +36,13 @@ interface PatternDao {
     @Query("UPDATE patterns SET coverImagePath = :path, updatedAt = :updatedAt WHERE id = :id")
     suspend fun setCoverImagePath(id: Long, path: String?, updatedAt: Long)
 
+    @Query("UPDATE patterns SET snapshotPath = :path, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun setSnapshotPath(id: Long, path: String?, updatedAt: Long)
+
+    /** The first pattern saved from any of [urls] (spellings of the same link). */
+    @Query("SELECT * FROM patterns WHERE sourceUrl IN (:urls) ORDER BY createdAt LIMIT 1")
+    suspend fun findBySourceUrl(urls: List<String>): Pattern?
+
     @Query("UPDATE patterns SET lastOpenedAt = :openedAt WHERE id = :id")
     suspend fun setLastOpened(id: Long, openedAt: Long)
 

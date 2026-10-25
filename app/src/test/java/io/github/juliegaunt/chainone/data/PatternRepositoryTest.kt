@@ -5,6 +5,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import io.github.juliegaunt.chainone.data.db.ChainOneDatabase
 import io.github.juliegaunt.chainone.data.files.FileStore
+import io.github.juliegaunt.chainone.data.importer.StagedImport
 import io.github.juliegaunt.chainone.data.repository.PatternDraft
 import io.github.juliegaunt.chainone.data.repository.PatternRepository
 import kotlinx.coroutines.test.runTest
@@ -101,6 +102,52 @@ class PatternRepositoryTest {
 
         assertNull(repository.getPattern(id)!!.coverImagePath)
         assertFalse(File(root, path).exists())
+    }
+
+    @Test
+    fun attachImportMovesCoverAndPageCopyIntoThePattern() = runTest {
+        val staged = stagedImport(withCover = true)
+        val id = repository.create(PatternDraft(title = "Tote"))
+
+        repository.attachImport(id, staged, keepCover = true)
+
+        val pattern = repository.getPattern(id)!!
+        assertEquals("cover", File(root, pattern.coverImagePath!!).readText())
+        assertEquals("patterns/$id/snapshot/index.html", pattern.snapshotPath)
+        assertEquals("<p>page</p>", File(root, pattern.snapshotPath!!).readText())
+        assertTrue(File(root, "patterns/$id/snapshot/image-1.jpg").exists())
+        assertFalse("files are moved, not copied", staged.coverFile!!.exists())
+        assertFalse(staged.snapshotDir!!.exists())
+    }
+
+    @Test
+    fun attachImportCanSkipTheDownloadedCover() = runTest {
+        val staged = stagedImport(withCover = true)
+        val id = repository.create(PatternDraft(title = "Tote"))
+
+        repository.attachImport(id, staged, keepCover = false)
+
+        assertNull(repository.getPattern(id)!!.coverImagePath)
+        assertTrue(repository.getPattern(id)!!.snapshotPath != null)
+    }
+
+    @Test
+    fun findsPatternSavedFromAnotherSpellingOfTheLink() = runTest {
+        val id = repository.create(PatternDraft(title = "Bag", sourceUrl = "http://www.example.com/bag"))
+
+        assertEquals(id, repository.findBySourceUrl("https://example.com/bag/")?.id)
+        assertNull(repository.findBySourceUrl("https://example.com/other"))
+    }
+
+    private fun stagedImport(withCover: Boolean): StagedImport {
+        val folder = tempFolder.newFolder("staged")
+        val cover = if (withCover) File(folder, "cover.jpg").apply { writeText("cover") } else null
+        val snapshot = File(folder, "snapshot").apply {
+            mkdirs()
+            File(this, "index.html").writeText("<p>page</p>")
+            File(this, "image-1.jpg").writeText("img")
+        }
+        return StagedImport(id = "staged", sourceUrl = "https://example.com/tote", coverFile = cover, snapshotDir = snapshot)
     }
 
     @Test

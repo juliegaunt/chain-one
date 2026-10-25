@@ -9,13 +9,20 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.juliegaunt.chainone.appContainer
 import io.github.juliegaunt.chainone.data.db.Pattern
+import io.github.juliegaunt.chainone.R
 import io.github.juliegaunt.chainone.data.db.PatternStatus
+import io.github.juliegaunt.chainone.data.db.SourceType
 import io.github.juliegaunt.chainone.data.files.FileStore
+import io.github.juliegaunt.chainone.data.importer.ImportStaging
+import io.github.juliegaunt.chainone.data.importer.StagedImport
+import io.github.juliegaunt.chainone.data.importer.UrlTools
 import io.github.juliegaunt.chainone.data.repository.PatternDraft
 import io.github.juliegaunt.chainone.data.repository.PatternRepository
 import io.github.juliegaunt.chainone.ui.components.coverFile
+import io.github.juliegaunt.chainone.ui.navigation.ARG_IMPORT_ID
 import io.github.juliegaunt.chainone.ui.navigation.ARG_PATTERN_ID
 import io.github.juliegaunt.chainone.ui.navigation.NEW_PATTERN_ID
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -48,6 +55,16 @@ data class PatternForm(
     )
 
     companion object {
+        fun from(staged: StagedImport) = PatternForm(
+            title = staged.title,
+            designer = staged.designer,
+            sourceUrl = staged.sourceUrl,
+            hookSize = staged.hookSize,
+            yarnWeight = staged.yarnWeight,
+            materials = staged.materials,
+            instructions = staged.instructions,
+        )
+
         fun from(pattern: Pattern) = PatternForm(
             title = pattern.title,
             designer = pattern.designer,
@@ -62,12 +79,24 @@ data class PatternForm(
     }
 }
 
+/** What the review banner says about a pattern imported from a website. */
+data class ImportReview(
+    val host: String,
+    /** String resources of the fields the page didn't provide. */
+    val missingFields: List<Int>,
+    val foundInstructions: Boolean,
+    val hasPageCopy: Boolean,
+)
+
 data class EditPatternUiState(
     val isNew: Boolean,
+    /** Set when reviewing a pattern downloaded from a website, before it's saved. */
+    val review: ImportReview? = null,
     val isLoading: Boolean = !isNew,
     val form: PatternForm = PatternForm(),
     /** The form as it was when the screen opened, to detect unsaved changes. */
     val initialForm: PatternForm = PatternForm(),
+    /** The cover already saved (or, when reviewing an import, the downloaded one). */
     val savedCover: File? = null,
     /** A photo picked on this screen but not saved yet. */
     val pickedCover: Uri? = null,
@@ -75,6 +104,7 @@ data class EditPatternUiState(
     val showTitleError: Boolean = false,
     val isSaving: Boolean = false,
     val coverCopyFailed: Boolean = false,
+    val importFilesFailed: Boolean = false,
     /** Set when saving finished; the screen then navigates away. */
     val savedId: Long? = null,
 ) {
@@ -87,19 +117,42 @@ class EditPatternViewModel(
     savedStateHandle: SavedStateHandle,
     private val repository: PatternRepository,
     private val fileStore: FileStore,
+    private val staging: ImportStaging,
+    private val appScope: CoroutineScope,
 ) : ViewModel() {
 
     private val patternId: Long = savedStateHandle[ARG_PATTERN_ID] ?: NEW_PATTERN_ID
+
+    /** Set when reviewing a pattern imported from a website; the downloaded files wait in [staging]. */
+    private val importId: String? = savedStateHandle[ARG_IMPORT_ID]
     private val isNew = patternId == NEW_PATTERN_ID
+    private var staged: StagedImport? = null
+    private var importAttached = false
 
     /** Null until a new pattern has been inserted, so a retry after a failed photo copy updates it. */
     private var storedId: Long? = patternId.takeUnless { isNew }
 
-    private val _uiState = MutableStateFlow(EditPatternUiState(isNew = isNew))
+    private val _uiState = MutableStateFlow(EditPatternUiState(isNew = isNew, isLoading = !isNew || importId != null))
     val uiState: StateFlow<EditPatternUiState> = _uiState.asStateFlow()
 
     init {
-        if (!isNew) {
+        if (importId != null) {
+            viewModelScope.launch {
+                val loaded = staging.load(importId)
+                staged = loaded
+                val form = loaded?.let(PatternForm::from) ?: PatternForm()
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        form = form,
+                        // Compared with a blank form, so leaving without saving asks first.
+                        initialForm = PatternForm(),
+                        savedCover = loaded?.coverFile,
+                        review = loaded?.takeIf { it.downloaded }?.let(::reviewOf),
+                    )
+                }
+            }
+        } else if (!isNew) {
             viewModelScope.launch {
                 val pattern = repository.getPattern(patternId)
                 val form = pattern?.let(PatternForm::from) ?: PatternForm()
@@ -123,7 +176,9 @@ class EditPatternViewModel(
     }
 
     fun pickCover(uri: Uri) {
-        _uiState.update { it.copy(pickedCover = uri, removeCover = false, coverCopyFailed = false) }
+        _uiState.update {
+            it.copy(pickedCover = uri, removeCover = false, coverCopyFailed = false, importFilesFailed = false)
+        }
     }
 
     fun removeCover() {
@@ -140,9 +195,21 @@ class EditPatternViewModel(
         _uiState.update { it.copy(isSaving = true) }
 
         viewModelScope.launch {
+            val staged = this@EditPatternViewModel.staged
+            val sourceType = if (staged?.downloaded == true) SourceType.URL else SourceType.MANUAL
             val id = storedId
                 ?.also { repository.update(it, state.form.toDraft()) }
-                ?: repository.create(state.form.toDraft()).also { storedId = it }
+                ?: repository.create(state.form.toDraft(), sourceType).also { storedId = it }
+
+            var filesFailed = false
+            if (staged != null && !importAttached) {
+                try {
+                    repository.attachImport(id, staged, keepCover = state.pickedCover == null && !state.removeCover)
+                    importAttached = true
+                } catch (e: IOException) {
+                    filesFailed = true
+                }
+            }
 
             var coverFailed = false
             try {
@@ -161,6 +228,9 @@ class EditPatternViewModel(
                 if (coverFailed) {
                     // The text is saved; stay on screen so the person can pick the photo again.
                     it.copy(isSaving = false, coverCopyFailed = true, pickedCover = null, initialForm = it.form)
+                } else if (filesFailed) {
+                    // The text is saved; Save again retries moving the files.
+                    it.copy(isSaving = false, importFilesFailed = true, initialForm = it.form)
                 } else {
                     it.copy(isSaving = false, savedId = id)
                 }
@@ -168,11 +238,35 @@ class EditPatternViewModel(
         }
     }
 
+    override fun onCleared() {
+        // Saving has already moved the files out; this removes what's left, or the whole
+        // download if the person discarded it. It must outlive this screen, hence appScope.
+        importId?.let { id -> appScope.launch { staging.discard(id) } }
+    }
+
+    private fun reviewOf(staged: StagedImport) = ImportReview(
+        host = UrlTools.host(staged.sourceUrl),
+        missingFields = listOfNotNull(
+            R.string.field_designer.takeIf { staged.designer.isBlank() },
+            R.string.field_hook_size.takeIf { staged.hookSize.isBlank() },
+            R.string.field_yarn_weight.takeIf { staged.yarnWeight.isBlank() },
+            R.string.field_materials.takeIf { staged.materials.isBlank() },
+        ),
+        foundInstructions = staged.foundInstructions,
+        hasPageCopy = staged.snapshotDir != null,
+    )
+
     companion object {
         val Factory = viewModelFactory {
             initializer {
                 val container = appContainer
-                EditPatternViewModel(createSavedStateHandle(), container.patternRepository, container.fileStore)
+                EditPatternViewModel(
+                    createSavedStateHandle(),
+                    container.patternRepository,
+                    container.fileStore,
+                    container.importStaging,
+                    container.appScope,
+                )
             }
         }
     }

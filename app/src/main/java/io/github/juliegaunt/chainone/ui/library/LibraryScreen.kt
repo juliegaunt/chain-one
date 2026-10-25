@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.Card
@@ -31,16 +32,22 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -60,10 +67,12 @@ private val ListBottomPadding = 96.dp
 @Composable
 fun LibraryScreen(
     onOpenPattern: (Long) -> Unit,
-    onAddPattern: () -> Unit,
+    onAddManually: () -> Unit,
+    onImportFromWeb: () -> Unit,
     viewModel: LibraryViewModel = viewModel(factory = LibraryViewModel.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    var showAddChoices by rememberSaveable { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -99,7 +108,7 @@ fun LibraryScreen(
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                onClick = onAddPattern,
+                onClick = { showAddChoices = true },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
                 icon = { Icon(Icons.Filled.Add, contentDescription = null) },
@@ -124,6 +133,44 @@ fun LibraryScreen(
                 onOpen = onOpenPattern,
                 onToggleFavorite = viewModel::toggleFavorite,
                 modifier = modifier,
+            )
+        }
+    }
+
+    if (showAddChoices) {
+        AddPatternSheet(
+            onDismiss = { showAddChoices = false },
+            onImportFromWeb = {
+                showAddChoices = false
+                onImportFromWeb()
+            },
+            onAddManually = {
+                showAddChoices = false
+                onAddManually()
+            },
+        )
+    }
+}
+
+/** Asks how to add a pattern: from a website (most patterns) or by typing it in. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AddPatternSheet(onDismiss: () -> Unit, onImportFromWeb: () -> Unit, onAddManually: () -> Unit) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(Modifier.padding(bottom = 24.dp)) {
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.library_add_from_web)) },
+                supportingContent = { Text(stringResource(R.string.library_add_from_web_hint)) },
+                leadingContent = { Icon(painterResource(R.drawable.ic_link), contentDescription = null) },
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                modifier = Modifier.clickable(onClick = onImportFromWeb),
+            )
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.library_add_manually)) },
+                supportingContent = { Text(stringResource(R.string.library_add_manually_hint)) },
+                leadingContent = { Icon(Icons.Filled.Edit, contentDescription = null) },
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                modifier = Modifier.clickable(onClick = onAddManually),
             )
         }
     }

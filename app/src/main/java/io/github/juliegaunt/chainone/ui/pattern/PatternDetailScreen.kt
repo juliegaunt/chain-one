@@ -39,7 +39,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -62,6 +61,7 @@ import java.io.File
 private enum class DetailTab(val labelRes: Int) {
     OVERVIEW(R.string.tab_overview),
     INSTRUCTIONS(R.string.tab_instructions),
+    WEB_PAGE(R.string.tab_web_page),
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -74,7 +74,7 @@ fun PatternDetailScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showMenu by rememberSaveable { mutableStateOf(false) }
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
-    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
+    var selectedTab by rememberSaveable { mutableStateOf<DetailTab?>(null) }
 
     LaunchedEffect(state.isDeleted) {
         if (state.isDeleted) onBack()
@@ -142,18 +142,24 @@ fun PatternDetailScreen(
                     )
                 }
                 else -> {
-                    PrimaryTabRow(selectedTabIndex = selectedTab) {
-                        DetailTab.entries.forEachIndexed { index, tab ->
+                    val tabs = DetailTab.entries.filter { it != DetailTab.WEB_PAGE || state.savedPage != null }
+                    // When the import couldn't pick out the instructions, the saved page is where they are.
+                    val defaultTab =
+                        if (pattern.instructions.isBlank() && state.savedPage != null) DetailTab.WEB_PAGE else DetailTab.OVERVIEW
+                    val currentTab = selectedTab?.takeIf { it in tabs } ?: defaultTab
+                    PrimaryTabRow(selectedTabIndex = tabs.indexOf(currentTab)) {
+                        tabs.forEach { tab ->
                             Tab(
-                                selected = selectedTab == index,
-                                onClick = { selectedTab = index },
+                                selected = currentTab == tab,
+                                onClick = { selectedTab = tab },
                                 text = { Text(stringResource(tab.labelRes)) },
                             )
                         }
                     }
-                    when (DetailTab.entries[selectedTab]) {
+                    when (currentTab) {
                         DetailTab.OVERVIEW -> OverviewTab(pattern, state.cover)
                         DetailTab.INSTRUCTIONS -> InstructionsTab(pattern)
+                        DetailTab.WEB_PAGE -> state.savedPage?.let { SavedPageView(it, Modifier.fillMaxSize()) }
                     }
                 }
             }

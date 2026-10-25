@@ -28,6 +28,8 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.FilterChip
@@ -76,6 +78,7 @@ fun EditPatternScreen(
     var confirmDiscard by rememberSaveable { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val coverFailedMessage = stringResource(R.string.edit_cover_failed)
+    val filesFailedMessage = stringResource(R.string.edit_files_failed)
 
     val pickPhoto = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         uri?.let(viewModel::pickCover)
@@ -89,6 +92,9 @@ fun EditPatternScreen(
     }
     LaunchedEffect(state.coverCopyFailed) {
         if (state.coverCopyFailed) snackbarHostState.showSnackbar(coverFailedMessage)
+    }
+    LaunchedEffect(state.importFilesFailed) {
+        if (state.importFilesFailed) snackbarHostState.showSnackbar(filesFailedMessage)
     }
 
     val tryClose = { if (state.hasChanges) confirmDiscard = true else onBack() }
@@ -133,7 +139,9 @@ fun EditPatternScreen(
     if (confirmDiscard) {
         AlertDialog(
             onDismissRequest = { confirmDiscard = false },
-            title = { Text(stringResource(R.string.edit_discard_title)) },
+            title = {
+                Text(stringResource(if (state.review != null) R.string.edit_discard_import_title else R.string.edit_discard_title))
+            },
             confirmButton = {
                 TextButton(onClick = {
                     confirmDiscard = false
@@ -163,6 +171,8 @@ private fun EditForm(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        state.review?.let { ImportReviewCard(it) }
+
         // First, because most patterns will come from a website.
         OutlinedTextField(
             value = form.sourceUrl,
@@ -309,6 +319,35 @@ private fun CoverPicker(model: Any?, onPick: () -> Unit, onRemove: () -> Unit) {
                     .padding(8.dp),
             ) {
                 Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.edit_remove_photo))
+            }
+        }
+    }
+}
+
+/** Tells the person what was imported and what's missing, so they know what to check. */
+@Composable
+private fun ImportReviewCard(review: ImportReview) {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+        ),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(stringResource(R.string.review_heading), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.review_intro, review.host), style = MaterialTheme.typography.bodyMedium)
+            if (review.missingFields.isNotEmpty()) {
+                val fields = review.missingFields.map { stringResource(it).lowercase() }
+                    .joinToString(stringResource(R.string.review_list_separator))
+                Text(stringResource(R.string.review_missing, fields), style = MaterialTheme.typography.bodyMedium)
+            }
+            when {
+                !review.foundInstructions && review.hasPageCopy -> Text(
+                    stringResource(R.string.review_no_instructions),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                review.hasPageCopy -> Text(stringResource(R.string.review_page_saved), style = MaterialTheme.typography.bodyMedium)
             }
         }
     }
