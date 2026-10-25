@@ -20,12 +20,15 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.IconToggleButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
@@ -52,6 +55,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.juliegaunt.chainone.R
 import io.github.juliegaunt.chainone.data.db.Pattern
 import io.github.juliegaunt.chainone.ui.components.PatternCover
+import io.github.juliegaunt.chainone.ui.components.colors
 import io.github.juliegaunt.chainone.ui.components.labelRes
 import java.io.File
 
@@ -89,7 +93,12 @@ fun PatternDetailScreen(
                 },
                 actions = {
                     if (pattern != null) {
-                        IconToggleButton(checked = pattern.isFavorite, onCheckedChange = { viewModel.toggleFavorite() }) {
+                        IconToggleButton(
+                            checked = pattern.isFavorite,
+                            onCheckedChange = { viewModel.toggleFavorite() },
+                            // Stays gray when on, like the other top-bar icons; the filled heart shows the state.
+                            colors = IconButtonDefaults.iconToggleButtonColors(checkedContentColor = LocalContentColor.current),
+                        ) {
                             Icon(
                                 if (pattern.isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                                 contentDescription = stringResource(
@@ -200,7 +209,16 @@ private fun OverviewTab(pattern: Pattern, cover: File?) {
                 }
             }
 
-            AssistChip(onClick = {}, label = { Text(stringResource(pattern.status.labelRes)) })
+            val statusColors = pattern.status.colors
+            AssistChip(
+                onClick = {},
+                label = { Text(stringResource(pattern.status.labelRes)) },
+                colors = AssistChipDefaults.assistChipColors(
+                    containerColor = statusColors.container,
+                    labelColor = statusColors.content,
+                ),
+                border = null,
+            )
 
             if (pattern.hookSize.isNotBlank() || pattern.yarnWeight.isNotBlank()) {
                 Row(horizontalArrangement = Arrangement.spacedBy(32.dp)) {

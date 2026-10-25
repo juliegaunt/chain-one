@@ -28,8 +28,10 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -71,6 +73,8 @@ fun LibraryScreen(
                     IconToggleButton(
                         checked = state.favoritesOnly,
                         onCheckedChange = { viewModel.toggleFavoritesOnly() },
+                        // Stays gray when on, like the other top-bar icons; the filled heart shows the state.
+                        colors = IconButtonDefaults.iconToggleButtonColors(checkedContentColor = LocalContentColor.current),
                     ) {
                         Icon(
                             if (state.favoritesOnly) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
@@ -96,6 +100,8 @@ fun LibraryScreen(
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = onAddPattern,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
                 icon = { Icon(Icons.Filled.Add, contentDescription = null) },
                 text = { Text(stringResource(R.string.library_add_pattern)) },
             )

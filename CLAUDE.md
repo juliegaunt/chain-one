@@ -26,9 +26,9 @@ Offline, ad-free Android app for storing crochet patterns (from URLs and PDFs) w
 
 ## Milestones (build in order; app must compile and run after each)
 1. Project setup, data model, manual pattern entry, library screen
-2. Counter
-3. PDF import and viewer
-4. URL import + share sheet
+2. URL import + share sheet (moved ahead of the counter at the owner's request)
+3. Counter
+4. PDF import and viewer
 5. Search, tags, status
 6. Backup/restore
 
@@ -50,4 +50,4 @@ Offline, ad-free Android app for storing crochet patterns (from URLs and PDFs) w
 
 ## Progress
 - Milestone 1 done (all tables exist; schema v1 in `app/schemas/`)
-- Current milestone: 2 (Counter)
+- Current milestone: 2 (URL import + share sheet)

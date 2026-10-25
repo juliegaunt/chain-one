@@ -4,8 +4,10 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -15,19 +17,24 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -42,6 +49,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
@@ -54,6 +62,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.juliegaunt.chainone.R
 import io.github.juliegaunt.chainone.data.db.PatternStatus
 import io.github.juliegaunt.chainone.ui.components.PatternCover
+import io.github.juliegaunt.chainone.ui.components.colors
 import io.github.juliegaunt.chainone.ui.components.labelRes
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -95,7 +104,11 @@ fun EditPatternScreen(
                     }
                 },
                 actions = {
-                    TextButton(onClick = viewModel::save, enabled = !state.isLoading && !state.isSaving) {
+                    Button(
+                        onClick = viewModel::save,
+                        enabled = !state.isLoading && !state.isSaving,
+                        modifier = Modifier.padding(end = 8.dp),
+                    ) {
                         Text(stringResource(R.string.action_save))
                     }
                 },
@@ -150,23 +163,16 @@ private fun EditForm(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        PatternCover(
-            model = state.coverModel,
-            title = form.title.ifBlank { "+" },
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(16f / 9f)
-                .clip(RoundedCornerShape(12.dp))
-                .clickable(onClick = onPickCover),
+        // First, because most patterns will come from a website.
+        OutlinedTextField(
+            value = form.sourceUrl,
+            onValueChange = { v -> onChange { it.copy(sourceUrl = v) } },
+            label = { Text(stringResource(R.string.field_source_url)) },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next),
+            modifier = Modifier.fillMaxWidth(),
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick = onPickCover) {
-                Text(stringResource(if (state.coverModel == null) R.string.edit_add_photo else R.string.edit_change_photo))
-            }
-            if (state.coverModel != null) {
-                TextButton(onClick = onRemoveCover) { Text(stringResource(R.string.edit_remove_photo)) }
-            }
-        }
+        CoverPicker(model = state.coverModel, onPick = onPickCover, onRemove = onRemoveCover)
 
         OutlinedTextField(
             value = form.title,
@@ -194,10 +200,23 @@ private fun EditForm(
         Text(stringResource(R.string.field_status), style = MaterialTheme.typography.labelLarge)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             PatternStatus.entries.forEach { status ->
+                val selected = form.status == status
+                val colors = status.colors
                 FilterChip(
-                    selected = form.status == status,
+                    selected = selected,
                     onClick = { onChange { it.copy(status = status) } },
                     label = { Text(stringResource(status.labelRes)) },
+                    leadingIcon = if (selected) {
+                        { Icon(Icons.Filled.Check, contentDescription = null, Modifier.size(FilterChipDefaults.IconSize)) }
+                    } else {
+                        null
+                    },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = colors.container,
+                        selectedLabelColor = colors.content,
+                        selectedLeadingIconColor = colors.content,
+                    ),
+                    border = FilterChipDefaults.filterChipBorder(enabled = true, selected = selected, borderColor = colors.accent),
                 )
             }
         }
@@ -248,14 +267,6 @@ private fun EditForm(
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
             modifier = Modifier.fillMaxWidth(),
         )
-        OutlinedTextField(
-            value = form.sourceUrl,
-            onValueChange = { v -> onChange { it.copy(sourceUrl = v) } },
-            label = { Text(stringResource(R.string.field_source_url)) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Done),
-            modifier = Modifier.fillMaxWidth(),
-        )
     }
 }
 
@@ -263,3 +274,42 @@ private val sentenceKeyboard = KeyboardOptions(
     capitalization = KeyboardCapitalization.Sentences,
     imeAction = ImeAction.Next,
 )
+
+/** The cover photo box: tap it to pick (or change) the photo; the corner button removes it. */
+@Composable
+private fun CoverPicker(model: Any?, onPick: () -> Unit, onRemove: () -> Unit) {
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .aspectRatio(16f / 9f)
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(
+                onClickLabel = stringResource(if (model == null) R.string.edit_add_photo else R.string.edit_change_photo),
+                onClick = onPick,
+            ),
+    ) {
+        if (model == null) {
+            Column(
+                Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.secondaryContainer),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                val color = MaterialTheme.colorScheme.onSecondaryContainer
+                Icon(Icons.Filled.Add, contentDescription = null, tint = color, modifier = Modifier.size(40.dp))
+                Text(stringResource(R.string.edit_add_photo), style = MaterialTheme.typography.titleMedium, color = color)
+            }
+        } else {
+            PatternCover(model = model, title = "", modifier = Modifier.fillMaxSize())
+            FilledTonalIconButton(
+                onClick = onRemove,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(8.dp),
+            ) {
+                Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.edit_remove_photo))
+            }
+        }
+    }
+}
