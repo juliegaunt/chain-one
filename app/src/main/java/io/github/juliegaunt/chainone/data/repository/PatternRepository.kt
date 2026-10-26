@@ -1,12 +1,16 @@
 package io.github.juliegaunt.chainone.data.repository
 
 import android.net.Uri
+import io.github.juliegaunt.chainone.data.db.LibraryFilter
+import io.github.juliegaunt.chainone.data.db.LibraryQuery
 import io.github.juliegaunt.chainone.data.db.Pattern
 import io.github.juliegaunt.chainone.data.db.PatternAttachment
 import io.github.juliegaunt.chainone.data.db.PatternDao
 import io.github.juliegaunt.chainone.data.db.PatternImage
 import io.github.juliegaunt.chainone.data.db.PatternStatus
 import io.github.juliegaunt.chainone.data.db.SourceType
+import io.github.juliegaunt.chainone.data.db.Tag
+import io.github.juliegaunt.chainone.data.db.TagCount
 import io.github.juliegaunt.chainone.data.files.FileStore
 import io.github.juliegaunt.chainone.data.importer.PatternImporter
 import io.github.juliegaunt.chainone.data.importer.StagedImport
@@ -25,6 +29,7 @@ data class PatternDraft(
     val instructions: String = "",
     val notes: String = "",
     val status: PatternStatus = PatternStatus.WANT_TO_MAKE,
+    val tags: List<String> = emptyList(),
 )
 
 /** Keeps the database and the files on disk in step for everything pattern-related. */
@@ -34,7 +39,15 @@ class PatternRepository(
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
 
-    fun observeLibrary(favoritesOnly: Boolean): Flow<List<Pattern>> = dao.observeLibrary(favoritesOnly)
+    fun observeLibrary(filter: LibraryFilter): Flow<List<Pattern>> = dao.observeLibrary(LibraryQuery.build(filter))
+
+    fun observePatternCount(): Flow<Int> = dao.observePatternCount()
+
+    fun observeTags(): Flow<List<TagCount>> = dao.observeTagCounts()
+
+    fun observeTagsFor(patternId: Long): Flow<List<Tag>> = dao.observeTagsFor(patternId)
+
+    suspend fun getTagNames(patternId: Long): List<String> = dao.getTagsFor(patternId).map { it.name }
 
     fun observePattern(id: Long): Flow<Pattern?> = dao.observePattern(id)
 
@@ -46,7 +59,7 @@ class PatternRepository(
 
     suspend fun create(draft: PatternDraft, sourceType: SourceType = SourceType.MANUAL): Long {
         val now = clock()
-        return dao.insert(
+        val id = dao.insert(
             Pattern(
                 title = draft.title.trim(),
                 designer = draft.designer.trim(),
@@ -62,6 +75,8 @@ class PatternRepository(
                 updatedAt = now,
             ),
         )
+        dao.replaceTags(id, cleanTags(draft.tags))
+        return id
     }
 
     suspend fun update(id: Long, draft: PatternDraft) {
@@ -80,7 +95,19 @@ class PatternRepository(
                 updatedAt = clock(),
             ),
         )
+        dao.replaceTags(id, cleanTags(draft.tags))
     }
+
+    suspend fun setStatus(id: Long, status: PatternStatus) = dao.setStatus(id, status, clock())
+
+    /** Renames a tag on every pattern; if the new name is already a tag, the two become one. */
+    suspend fun renameTag(id: Long, name: String) {
+        val clean = cleanTag(name)
+        if (clean.isNotEmpty()) dao.renameTag(id, clean)
+    }
+
+    /** Removes a tag from every pattern. */
+    suspend fun deleteTag(id: Long) = dao.deleteTag(id)
 
     suspend fun setFavorite(id: Long, favorite: Boolean) = dao.setFavorite(id, favorite, clock())
 
@@ -112,6 +139,7 @@ class PatternRepository(
 
     suspend fun delete(id: Long) {
         dao.delete(id)
+        dao.deleteUnusedTags()
         files.deletePatternFiles(id)
     }
 
@@ -123,5 +151,12 @@ class PatternRepository(
 
     private companion object {
         const val COVER_NAME = "cover"
+        const val MAX_TAG_LENGTH = 40
+
+        fun cleanTag(name: String): String = name.trim().replace(Regex("""\s+"""), " ").take(MAX_TAG_LENGTH).trim()
+
+        /** Trimmed, without blanks, and without the same tag twice in different case. */
+        fun cleanTags(names: List<String>): List<String> =
+            names.map(::cleanTag).filter { it.isNotEmpty() }.distinctBy { it.lowercase() }
     }
 }

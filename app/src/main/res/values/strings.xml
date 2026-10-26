@@ -14,6 +14,9 @@
     <string name="action_keep_editing">Keep editing</string>
     <string name="action_favorite">Add to favorites</string>
     <string name="action_unfavorite">Remove from favorites</string>
+    <string name="action_rename">Rename</string>
+    <string name="action_clear">Clear</string>
+    <string name="action_done">Done</string>
 
     <!-- Status -->
     <string name="status_want_to_make">Want to make</string>
@@ -32,6 +35,7 @@
     <string name="field_instructions">Instructions</string>
     <string name="field_notes">Notes</string>
     <string name="field_source_url">Source link</string>
+    <string name="field_tags">Tags</string>
 
     <!-- Library -->
     <string name="library_add_pattern">Add pattern</string>
@@ -44,12 +48,41 @@
     <string name="library_show_grid">Show as grid</string>
     <string name="library_empty">Your library is empty.\nTap “Add pattern” to save your first one.</string>
     <string name="library_empty_favorites">No favorites yet.\nTap the heart on a pattern to add it here.</string>
+    <string name="library_search">Search</string>
+    <string name="library_search_hint">Search patterns</string>
+    <string name="library_close_search">Close search</string>
+    <string name="library_clear_search">Clear search</string>
+    <string name="library_no_matches">No patterns match.</string>
+    <string name="library_clear_filters">Clear filters</string>
+    <string name="library_filter_tags">Tags</string>
+    <plurals name="library_tags_selected">
+        <item quantity="one">%d tag</item>
+        <item quantity="other">%d tags</item>
+    </plurals>
+
+    <!-- Tags -->
+    <string name="tags_sheet_title">Filter by tags</string>
+    <string name="tags_sheet_hint">Shows patterns that have all the tags you pick.</string>
+    <string name="tags_none">No tags yet. Add tags to a pattern on its edit screen.</string>
+    <string name="tag_options">Options for %1$s</string>
+    <plurals name="tag_pattern_count">
+        <item quantity="one">%d pattern</item>
+        <item quantity="other">%d patterns</item>
+    </plurals>
+    <string name="tag_rename_title">Rename tag</string>
+    <string name="tag_rename_hint">If another tag already has this name, the two are combined.</string>
+    <string name="tag_delete_title">Delete “%1$s”?</string>
+    <plurals name="tag_delete_message">
+        <item quantity="one">It will be removed from %d pattern. The pattern itself stays.</item>
+        <item quantity="other">It will be removed from %d patterns. The patterns themselves stay.</item>
+    </plurals>
 
     <!-- Pattern detail -->
     <string name="tab_overview">Overview</string>
     <string name="tab_instructions">Instructions</string>
     <string name="tab_web_page">Web page</string>
     <string name="pattern_by_designer">by %1$s</string>
+    <string name="pattern_change_status">Change status</string>
     <string name="pattern_not_found">This pattern no longer exists.</string>
     <string name="instructions_empty">No instructions yet. Tap the pencil to add them.</string>
     <string name="delete_pattern_title">Delete pattern?</string>
@@ -63,6 +96,9 @@
     <string name="edit_change_photo">Change photo</string>
     <string name="edit_remove_photo">Remove photo</string>
     <string name="edit_cover_failed">Saved, but the photo couldn’t be copied. Try picking it again.</string>
+    <string name="edit_tags_hint">Type a tag and press Enter</string>
+    <string name="edit_add_tag">Add tag</string>
+    <string name="edit_remove_tag">Remove tag %1$s</string>
     <string name="edit_instructions_tip">Start a line with “## ” for a heading or “- ” for a bullet.</string>
     <string name="edit_discard_title">Discard your changes?</string>
     <string name="edit_discard_import_title">Discard this import?</string>

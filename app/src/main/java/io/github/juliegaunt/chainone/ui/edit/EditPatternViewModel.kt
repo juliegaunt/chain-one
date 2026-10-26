@@ -41,6 +41,7 @@ data class PatternForm(
     val instructions: String = "",
     val notes: String = "",
     val status: PatternStatus = PatternStatus.WANT_TO_MAKE,
+    val tags: List<String> = emptyList(),
 ) {
     fun toDraft() = PatternDraft(
         title = title,
@@ -52,6 +53,7 @@ data class PatternForm(
         instructions = instructions,
         notes = notes,
         status = status,
+        tags = tags,
     )
 
     companion object {
@@ -105,12 +107,27 @@ data class EditPatternUiState(
     val isSaving: Boolean = false,
     val coverCopyFailed: Boolean = false,
     val importFilesFailed: Boolean = false,
+    /** Text typed in the Tags box that hasn't been turned into a tag yet. */
+    val tagInput: String = "",
+    /** Every tag in the library, to suggest while typing. */
+    val allTags: List<String> = emptyList(),
     /** Set when saving finished; the screen then navigates away. */
     val savedId: Long? = null,
 ) {
     val coverModel: Any? get() = pickedCover ?: savedCover.takeUnless { removeCover }
 
-    val hasChanges: Boolean get() = form != initialForm || pickedCover != null || removeCover
+    val hasChanges: Boolean get() = form != initialForm || pickedCover != null || removeCover || tagInput.isNotBlank()
+
+    /** Existing tags matching what's typed (or, before typing, any), leaving out ones already added. */
+    val tagSuggestions: List<String>
+        get() = allTags
+            .filter { tag -> form.tags.none { it.equals(tag, ignoreCase = true) } }
+            .filter { it.contains(tagInput.trim(), ignoreCase = true) }
+            .take(MAX_SUGGESTIONS)
+
+    private companion object {
+        const val MAX_SUGGESTIONS = 8
+    }
 }
 
 class EditPatternViewModel(
@@ -136,6 +153,9 @@ class EditPatternViewModel(
     val uiState: StateFlow<EditPatternUiState> = _uiState.asStateFlow()
 
     init {
+        viewModelScope.launch {
+            repository.observeTags().collect { tags -> _uiState.update { it.copy(allTags = tags.map { tag -> tag.name }) } }
+        }
         if (importId != null) {
             viewModelScope.launch {
                 val loaded = staging.load(importId)
@@ -155,7 +175,7 @@ class EditPatternViewModel(
         } else if (!isNew) {
             viewModelScope.launch {
                 val pattern = repository.getPattern(patternId)
-                val form = pattern?.let(PatternForm::from) ?: PatternForm()
+                val form = pattern?.let { PatternForm.from(it).copy(tags = repository.getTagNames(it.id)) } ?: PatternForm()
                 _uiState.update {
                     it.copy(
                         isLoading = false,
@@ -166,6 +186,31 @@ class EditPatternViewModel(
                 }
             }
         }
+    }
+
+    /** Typing a comma finishes a tag, like pressing Enter. */
+    fun updateTagInput(text: String) {
+        if (',' in text) {
+            text.split(',').dropLast(1).forEach(::addTag)
+            _uiState.update { it.copy(tagInput = text.substringAfterLast(',')) }
+        } else {
+            _uiState.update { it.copy(tagInput = text) }
+        }
+    }
+
+    /** Adds a tag, using an existing tag's spelling if one matches regardless of case. */
+    fun addTag(name: String) {
+        val clean = name.trim().replace(Regex("""\s+"""), " ")
+        _uiState.update { state ->
+            if (clean.isEmpty()) return@update state.copy(tagInput = "")
+            val spelling = state.allTags.firstOrNull { it.equals(clean, ignoreCase = true) } ?: clean
+            val tags = if (state.form.tags.any { it.equals(spelling, ignoreCase = true) }) state.form.tags else state.form.tags + spelling
+            state.copy(form = state.form.copy(tags = tags), tagInput = "")
+        }
+    }
+
+    fun removeTag(name: String) {
+        _uiState.update { it.copy(form = it.form.copy(tags = it.form.tags - name)) }
     }
 
     fun updateForm(change: (PatternForm) -> PatternForm) {
@@ -186,6 +231,8 @@ class EditPatternViewModel(
     }
 
     fun save() {
+        // A tag still in the box when Save is pressed counts too.
+        if (_uiState.value.tagInput.isNotBlank()) addTag(_uiState.value.tagInput)
         val state = _uiState.value
         if (state.isSaving) return
         if (state.form.title.isBlank()) {

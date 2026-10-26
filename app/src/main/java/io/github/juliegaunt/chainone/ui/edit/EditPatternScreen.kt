@@ -1,5 +1,4 @@
 package io.github.juliegaunt.chainone.ui.edit
-
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -20,11 +19,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -32,15 +31,16 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalIconButton
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.InputChip
+import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -64,8 +64,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.juliegaunt.chainone.R
 import io.github.juliegaunt.chainone.data.db.PatternStatus
 import io.github.juliegaunt.chainone.ui.components.PatternCover
-import io.github.juliegaunt.chainone.ui.components.colors
-import io.github.juliegaunt.chainone.ui.components.labelRes
+import io.github.juliegaunt.chainone.ui.components.StatusChip
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -126,6 +125,9 @@ fun EditPatternScreen(
             EditForm(
                 state = state,
                 onChange = viewModel::updateForm,
+                onTagInputChange = viewModel::updateTagInput,
+                onAddTag = viewModel::addTag,
+                onRemoveTag = viewModel::removeTag,
                 onPickCover = launchPicker,
                 onRemoveCover = viewModel::removeCover,
                 modifier = Modifier
@@ -160,6 +162,9 @@ fun EditPatternScreen(
 private fun EditForm(
     state: EditPatternUiState,
     onChange: ((PatternForm) -> PatternForm) -> Unit,
+    onTagInputChange: (String) -> Unit,
+    onAddTag: (String) -> Unit,
+    onRemoveTag: (String) -> Unit,
     onPickCover: () -> Unit,
     onRemoveCover: () -> Unit,
     modifier: Modifier = Modifier,
@@ -210,26 +215,18 @@ private fun EditForm(
         Text(stringResource(R.string.field_status), style = MaterialTheme.typography.labelLarge)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             PatternStatus.entries.forEach { status ->
-                val selected = form.status == status
-                val colors = status.colors
-                FilterChip(
-                    selected = selected,
-                    onClick = { onChange { it.copy(status = status) } },
-                    label = { Text(stringResource(status.labelRes)) },
-                    leadingIcon = if (selected) {
-                        { Icon(Icons.Filled.Check, contentDescription = null, Modifier.size(FilterChipDefaults.IconSize)) }
-                    } else {
-                        null
-                    },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = colors.container,
-                        selectedLabelColor = colors.content,
-                        selectedLeadingIconColor = colors.content,
-                    ),
-                    border = FilterChipDefaults.filterChipBorder(enabled = true, selected = selected, borderColor = colors.accent),
-                )
+                StatusChip(status, selected = form.status == status, onClick = { onChange { it.copy(status = status) } })
             }
         }
+
+        TagsField(
+            tags = form.tags,
+            input = state.tagInput,
+            suggestions = state.tagSuggestions,
+            onInputChange = onTagInputChange,
+            onAdd = onAddTag,
+            onRemove = onRemoveTag,
+        )
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             OutlinedTextField(
@@ -348,6 +345,69 @@ private fun ImportReviewCard(review: ImportReview) {
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 review.hasPageCopy -> Text(stringResource(R.string.review_page_saved), style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+    }
+}
+
+/**
+ * The pattern's tags as removable chips, a box to type new ones (Enter or a comma adds one),
+ * and existing tags to tap, so the same tag isn't created twice with different spellings.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun TagsField(
+    tags: List<String>,
+    input: String,
+    suggestions: List<String>,
+    onInputChange: (String) -> Unit,
+    onAdd: (String) -> Unit,
+    onRemove: (String) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (tags.isNotEmpty()) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                tags.forEach { tag ->
+                    InputChip(
+                        selected = false,
+                        onClick = { onRemove(tag) },
+                        label = { Text(tag) },
+                        trailingIcon = {
+                            Icon(
+                                Icons.Filled.Close,
+                                contentDescription = stringResource(R.string.edit_remove_tag, tag),
+                                modifier = Modifier.size(InputChipDefaults.IconSize),
+                            )
+                        },
+                    )
+                }
+            }
+        }
+        OutlinedTextField(
+            value = input,
+            onValueChange = onInputChange,
+            label = { Text(stringResource(R.string.field_tags)) },
+            placeholder = { Text(stringResource(R.string.edit_tags_hint)) },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+            // Handling Done keeps the keyboard open, ready for the next tag.
+            keyboardActions = KeyboardActions(onDone = { onAdd(input) }),
+            trailingIcon = if (input.isNotBlank()) {
+                {
+                    IconButton(onClick = { onAdd(input) }) {
+                        Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.edit_add_tag))
+                    }
+                }
+            } else {
+                null
+            },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        if (suggestions.isNotEmpty()) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                suggestions.forEach { tag ->
+                    SuggestionChip(onClick = { onAdd(tag) }, label = { Text(tag) })
+                }
             }
         }
     }

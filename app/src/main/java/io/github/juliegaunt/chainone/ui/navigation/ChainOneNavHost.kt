@@ -3,6 +3,8 @@ package io.github.juliegaunt.chainone.ui.navigation
 import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -32,6 +34,9 @@ const val ARG_PATTERN_ID = "patternId"
 const val ARG_IMPORT_ID = "importId"
 const val ARG_SHARED_TEXT = "sharedText"
 
+/** Set on the library's saved state to show only the patterns with this tag id. */
+const val KEY_SHOW_TAG = "showTag"
+
 /** Used in the edit route when creating a new pattern. */
 const val NEW_PATTERN_ID = -1L
 
@@ -51,11 +56,15 @@ fun ChainOneNavHost(sharedText: String? = null, onShareHandled: () -> Unit = {})
     }
 
     NavHost(navController = navController, startDestination = Routes.LIBRARY) {
-        composable(Routes.LIBRARY) {
+        composable(Routes.LIBRARY) { entry ->
+            // Set by a pattern's page when one of its tags is tapped.
+            val showTag by entry.savedStateHandle.getStateFlow<Long?>(KEY_SHOW_TAG, null).collectAsState()
             LibraryScreen(
                 onOpenPattern = { navController.navigate(Routes.pattern(it)) },
                 onAddManually = { navController.navigate(Routes.edit()) },
                 onImportFromWeb = { navController.navigate(Routes.import()) },
+                showTagRequest = showTag,
+                onShowTagHandled = { entry.savedStateHandle[KEY_SHOW_TAG] = null },
             )
         }
 
@@ -66,6 +75,11 @@ fun ChainOneNavHost(sharedText: String? = null, onShareHandled: () -> Unit = {})
             PatternDetailScreen(
                 onBack = { navController.popBackStack() },
                 onEdit = { navController.navigate(Routes.edit(it)) },
+                onShowTag = { tagId ->
+                    // Back to the library, filtered to that tag.
+                    navController.getBackStackEntry(Routes.LIBRARY).savedStateHandle[KEY_SHOW_TAG] = tagId
+                    navController.popBackStack(Routes.LIBRARY, inclusive = false)
+                },
             )
         }
 

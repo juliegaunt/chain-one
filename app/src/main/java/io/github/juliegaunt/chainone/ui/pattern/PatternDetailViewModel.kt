@@ -8,6 +8,8 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.juliegaunt.chainone.appContainer
 import io.github.juliegaunt.chainone.data.db.Pattern
+import io.github.juliegaunt.chainone.data.db.PatternStatus
+import io.github.juliegaunt.chainone.data.db.Tag
 import io.github.juliegaunt.chainone.data.files.FileStore
 import io.github.juliegaunt.chainone.data.repository.PatternRepository
 import io.github.juliegaunt.chainone.ui.components.coverFile
@@ -23,6 +25,7 @@ import java.io.File
 data class PatternDetailUiState(
     val pattern: Pattern? = null,
     val cover: File? = null,
+    val tags: List<Tag> = emptyList(),
     /** The saved copy of the pattern's web page, if it was imported from one. */
     val savedPage: File? = null,
     val isLoading: Boolean = true,
@@ -41,11 +44,13 @@ class PatternDetailViewModel(
 
     val uiState: StateFlow<PatternDetailUiState> = combine(
         repository.observePattern(patternId),
+        repository.observeTagsFor(patternId),
         isDeleted,
-    ) { pattern, deleted ->
+    ) { pattern, tags, deleted ->
         PatternDetailUiState(
             pattern = pattern,
             cover = fileStore.coverFile(pattern?.coverImagePath),
+            tags = tags,
             savedPage = pattern?.snapshotPath?.let(fileStore::resolve),
             isLoading = false,
             isDeleted = deleted,
@@ -59,6 +64,10 @@ class PatternDetailViewModel(
     fun toggleFavorite() {
         val pattern = uiState.value.pattern ?: return
         viewModelScope.launch { repository.setFavorite(pattern.id, !pattern.isFavorite) }
+    }
+
+    fun setStatus(status: PatternStatus) {
+        viewModelScope.launch { repository.setStatus(patternId, status) }
     }
 
     fun delete() {

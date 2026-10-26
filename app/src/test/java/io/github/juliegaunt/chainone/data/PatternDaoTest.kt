@@ -3,6 +3,8 @@ package io.github.juliegaunt.chainone.data
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import io.github.juliegaunt.chainone.data.db.ChainOneDatabase
+import io.github.juliegaunt.chainone.data.db.LibraryFilter
+import io.github.juliegaunt.chainone.data.db.LibraryQuery
 import io.github.juliegaunt.chainone.data.db.Pattern
 import io.github.juliegaunt.chainone.data.db.PatternAttachment
 import io.github.juliegaunt.chainone.data.db.PatternDao
@@ -65,7 +67,7 @@ class PatternDaoTest {
         dao.insert(pattern("Newest", updatedAt = 300))
         dao.insert(pattern("Middle", updatedAt = 200))
 
-        val titles = dao.observeLibrary(favoritesOnly = false).first().map { it.title }
+        val titles = dao.observeLibrary(LibraryQuery.build(LibraryFilter())).first().map { it.title }
         assertEquals(listOf("Newest", "Middle", "Old"), titles)
     }
 
@@ -74,7 +76,7 @@ class PatternDaoTest {
         dao.insert(pattern("Hat", favorite = true))
         dao.insert(pattern("Scarf"))
 
-        val titles = dao.observeLibrary(favoritesOnly = true).first().map { it.title }
+        val titles = dao.observeLibrary(LibraryQuery.build(LibraryFilter(favoritesOnly = true))).first().map { it.title }
         assertEquals(listOf("Hat"), titles)
     }
 
@@ -94,7 +96,7 @@ class PatternDaoTest {
         val id = dao.insert(pattern("Before"))
         dao.update(dao.getPattern(id)!!.copy(title = "After"))
 
-        assertEquals("After", dao.observeLibrary(false).first().single().title)
+        assertEquals("After", dao.observeLibrary(LibraryQuery.build(LibraryFilter())).first().single().title)
     }
 
     @Test

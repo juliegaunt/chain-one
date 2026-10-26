@@ -1,19 +1,26 @@
 package io.github.juliegaunt.chainone.ui.pattern
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
@@ -40,6 +47,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -53,6 +61,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.juliegaunt.chainone.R
 import io.github.juliegaunt.chainone.data.db.Pattern
+import io.github.juliegaunt.chainone.data.db.PatternStatus
+import io.github.juliegaunt.chainone.data.db.Tag
 import io.github.juliegaunt.chainone.ui.components.PatternCover
 import io.github.juliegaunt.chainone.ui.components.colors
 import io.github.juliegaunt.chainone.ui.components.labelRes
@@ -69,6 +79,7 @@ private enum class DetailTab(val labelRes: Int) {
 fun PatternDetailScreen(
     onBack: () -> Unit,
     onEdit: (Long) -> Unit,
+    onShowTag: (Long) -> Unit,
     viewModel: PatternDetailViewModel = viewModel(factory = PatternDetailViewModel.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -157,7 +168,13 @@ fun PatternDetailScreen(
                         }
                     }
                     when (currentTab) {
-                        DetailTab.OVERVIEW -> OverviewTab(pattern, state.cover)
+                        DetailTab.OVERVIEW -> OverviewTab(
+                            pattern = pattern,
+                            cover = state.cover,
+                            tags = state.tags,
+                            onStatusChange = viewModel::setStatus,
+                            onShowTag = onShowTag,
+                        )
                         DetailTab.INSTRUCTIONS -> InstructionsTab(pattern)
                         DetailTab.WEB_PAGE -> state.savedPage?.let { SavedPageView(it, Modifier.fillMaxSize()) }
                     }
@@ -184,8 +201,15 @@ fun PatternDetailScreen(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun OverviewTab(pattern: Pattern, cover: File?) {
+private fun OverviewTab(
+    pattern: Pattern,
+    cover: File?,
+    tags: List<Tag>,
+    onStatusChange: (PatternStatus) -> Unit,
+    onShowTag: (Long) -> Unit,
+) {
     Column(
         Modifier
             .fillMaxSize()
@@ -215,16 +239,16 @@ private fun OverviewTab(pattern: Pattern, cover: File?) {
                 }
             }
 
-            val statusColors = pattern.status.colors
-            AssistChip(
-                onClick = {},
-                label = { Text(stringResource(pattern.status.labelRes)) },
-                colors = AssistChipDefaults.assistChipColors(
-                    containerColor = statusColors.container,
-                    labelColor = statusColors.content,
-                ),
-                border = null,
-            )
+            StatusPicker(pattern.status, onStatusChange)
+
+            if (tags.isNotEmpty()) {
+                // Tapping a tag shows the library's other patterns with it.
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    tags.forEach { tag ->
+                        AssistChip(onClick = { onShowTag(tag.id) }, label = { Text(tag.name) })
+                    }
+                }
+            }
 
             if (pattern.hookSize.isNotBlank() || pattern.yarnWeight.isNotBlank()) {
                 Row(horizontalArrangement = Arrangement.spacedBy(32.dp)) {
@@ -291,5 +315,54 @@ private fun Section(title: String, content: @Composable () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(title, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
         content()
+    }
+}
+
+/** The status badge; tapping it offers the other statuses, so changing it needs no trip to the edit screen. */
+@Composable
+private fun StatusPicker(status: PatternStatus, onChange: (PatternStatus) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    val statusColors = status.colors
+    Box {
+        AssistChip(
+            onClick = { expanded = true },
+            label = { Text(stringResource(status.labelRes)) },
+            trailingIcon = {
+                Icon(
+                    Icons.Filled.ArrowDropDown,
+                    contentDescription = stringResource(R.string.pattern_change_status),
+                    modifier = Modifier.size(AssistChipDefaults.IconSize),
+                )
+            },
+            colors = AssistChipDefaults.assistChipColors(
+                containerColor = statusColors.container,
+                labelColor = statusColors.content,
+                trailingIconContentColor = statusColors.content,
+            ),
+            border = null,
+        )
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            PatternStatus.entries.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(option.labelRes)) },
+                    leadingIcon = {
+                        Box(
+                            Modifier
+                                .size(12.dp)
+                                .background(option.colors.accent, CircleShape),
+                        )
+                    },
+                    trailingIcon = if (option == status) {
+                        { Icon(Icons.Filled.Check, contentDescription = null) }
+                    } else {
+                        null
+                    },
+                    onClick = {
+                        expanded = false
+                        if (option != status) onChange(option)
+                    },
+                )
+            }
+        }
     }
 }

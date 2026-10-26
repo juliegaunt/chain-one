@@ -27,9 +27,9 @@ Offline, ad-free Android app for storing crochet patterns (from URLs and PDFs) w
 ## Milestones (build in order; app must compile and run after each)
 1. Project setup, data model, manual pattern entry, library screen
 2. URL import + share sheet (moved ahead of the counter at the owner's request)
-3. Counter
-4. PDF import and viewer
-5. Search, tags, status
+3. Search, tags, status (moved ahead of the counter at the owner's request)
+4. Counter
+5. PDF import and viewer
 6. Backup/restore
 
 ## Working style
@@ -49,9 +49,11 @@ Offline, ad-free Android app for storing crochet patterns (from URLs and PDFs) w
 - Logo source is `design/chain-one-logo.svg`; `ic_logo.xml` and `ic_launcher_foreground.xml` are hand-converted from its path
 - DB tests use Robolectric (`./gradlew testDebugUnitTest`)
 - The network is used only in `data/importer/WebClient.kt`; imports wait in `cache/imports/<id>/` (`ImportStaging`) until saved from the review (edit) screen
+- Library filters are one SQL query built by `LibraryQuery` (LIKE search, all-of tags); tags are NOCASE-unique and unused ones are deleted automatically
 - Parser test pages in `app/src/test/resources/pages/` are hand-written; never commit copies of real pattern pages
 
 ## Progress
 - Milestone 1 done (all tables exist; schema v1 in `app/schemas/`)
 - Milestone 2 done (URL import + share sheet, pink #D14D72 theme, "ch1" logo as icon and library title)
-- Current milestone: 3 (Counter)
+- Milestone 3 (Search, tags, status) built; waiting for the owner to try it
+- Next milestone: 4 (Counter)

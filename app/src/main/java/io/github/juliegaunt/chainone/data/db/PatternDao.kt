@@ -2,21 +2,23 @@ package io.github.juliegaunt.chainone.data.db
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.RawQuery
+import androidx.room.Transaction
 import androidx.room.Update
+import androidx.sqlite.db.SupportSQLiteQuery
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface PatternDao {
 
-    @Query(
-        """
-        SELECT * FROM patterns
-        WHERE (:favoritesOnly = 0 OR isFavorite = 1)
-        ORDER BY updatedAt DESC, id DESC
-        """,
-    )
-    fun observeLibrary(favoritesOnly: Boolean): Flow<List<Pattern>>
+    /** The library with filters applied; build [query] with [LibraryQuery]. */
+    @RawQuery(observedEntities = [Pattern::class, PatternTag::class, Tag::class])
+    fun observeLibrary(query: SupportSQLiteQuery): Flow<List<Pattern>>
+
+    @Query("SELECT COUNT(*) FROM patterns")
+    fun observePatternCount(): Flow<Int>
 
     @Query("SELECT * FROM patterns WHERE id = :id")
     fun observePattern(id: Long): Flow<Pattern?>
@@ -43,6 +45,9 @@ interface PatternDao {
     @Query("SELECT * FROM patterns WHERE sourceUrl IN (:urls) ORDER BY createdAt LIMIT 1")
     suspend fun findBySourceUrl(urls: List<String>): Pattern?
 
+    @Query("UPDATE patterns SET status = :status, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun setStatus(id: Long, status: PatternStatus, updatedAt: Long)
+
     @Query("UPDATE patterns SET lastOpenedAt = :openedAt WHERE id = :id")
     suspend fun setLastOpened(id: Long, openedAt: Long)
 
@@ -60,4 +65,81 @@ interface PatternDao {
 
     @Insert
     suspend fun insertAttachment(attachment: PatternAttachment): Long
+
+    // Tags. Names compare without regard to case (the column is NOCASE), so "Baby" finds "baby".
+
+    @Query(
+        """
+        SELECT tags.id, tags.name, COUNT(pattern_tags.patternId) AS patternCount
+        FROM tags LEFT JOIN pattern_tags ON pattern_tags.tagId = tags.id
+        GROUP BY tags.id
+        ORDER BY tags.name COLLATE NOCASE
+        """,
+    )
+    fun observeTagCounts(): Flow<List<TagCount>>
+
+    @Query(
+        """
+        SELECT tags.* FROM tags JOIN pattern_tags ON pattern_tags.tagId = tags.id
+        WHERE pattern_tags.patternId = :patternId
+        ORDER BY tags.name COLLATE NOCASE
+        """,
+    )
+    fun observeTagsFor(patternId: Long): Flow<List<Tag>>
+
+    @Query(
+        """
+        SELECT tags.* FROM tags JOIN pattern_tags ON pattern_tags.tagId = tags.id
+        WHERE pattern_tags.patternId = :patternId
+        ORDER BY tags.name COLLATE NOCASE
+        """,
+    )
+    suspend fun getTagsFor(patternId: Long): List<Tag>
+
+    @Query("SELECT * FROM tags WHERE name = :name LIMIT 1")
+    suspend fun findTag(name: String): Tag?
+
+    @Insert
+    suspend fun insertTag(tag: Tag): Long
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertPatternTags(links: List<PatternTag>)
+
+    @Query("DELETE FROM pattern_tags WHERE patternId = :patternId")
+    suspend fun clearTags(patternId: Long)
+
+    /** Tags no pattern uses any more disappear, so the tag list stays tidy. */
+    @Query("DELETE FROM tags WHERE id NOT IN (SELECT tagId FROM pattern_tags)")
+    suspend fun deleteUnusedTags()
+
+    @Query("UPDATE tags SET name = :name WHERE id = :id")
+    suspend fun setTagName(id: Long, name: String)
+
+    @Query("INSERT OR IGNORE INTO pattern_tags (patternId, tagId) SELECT patternId, :intoId FROM pattern_tags WHERE tagId = :fromId")
+    suspend fun copyTagLinks(fromId: Long, intoId: Long)
+
+    /** Removes the tag from every pattern too (the links cascade). */
+    @Query("DELETE FROM tags WHERE id = :id")
+    suspend fun deleteTag(id: Long)
+
+    /** Gives a pattern exactly [names] as its tags, reusing existing tags whatever their case. */
+    @Transaction
+    suspend fun replaceTags(patternId: Long, names: List<String>) {
+        clearTags(patternId)
+        val ids = names.map { name -> findTag(name)?.id ?: insertTag(Tag(name = name)) }
+        insertPatternTags(ids.distinct().map { PatternTag(patternId = patternId, tagId = it) })
+        deleteUnusedTags()
+    }
+
+    /** Renames a tag; if another tag already has that name, the two are merged into it. */
+    @Transaction
+    suspend fun renameTag(id: Long, name: String) {
+        val existing = findTag(name)
+        if (existing != null && existing.id != id) {
+            copyTagLinks(fromId = id, intoId = existing.id)
+            deleteTag(id)
+        } else {
+            setTagName(id, name)
+        }
+    }
 }
