@@ -55,5 +55,5 @@ Offline, ad-free Android app for storing crochet patterns (from URLs and PDFs) w
 ## Progress
 - Milestone 1 done (all tables exist; schema v1 in `app/schemas/`)
 - Milestone 2 done (URL import + share sheet, pink #D14D72 theme, "ch1" logo as icon and library title)
-- Milestone 3 (Search, tags, status) built; waiting for the owner to try it
-- Next milestone: 4 (Counter)
+- Milestone 3 done (search, status and tag filters, tag rename/merge/delete, status badge on cards and pattern page)
+- Current milestone: 4 (Counter); plan proposed 2026-10-26, waiting for approval
