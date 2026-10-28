@@ -131,6 +131,10 @@ data class PatternTag(
     ],
     indices = [Index("patternId")],
 )
+/**
+ * A row/stitch counter. [value] is always the total count. A repeat counter (with
+ * [repeatLength]) shows it as "3 of 4, repeat 2 of 5" instead; see `RepeatProgress`.
+ */
 data class Counter(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val patternId: Long,
@@ -138,6 +142,10 @@ data class Counter(
     val value: Int = 0,
     val position: Int,
     val updatedAt: Long,
+    /** Counts this many, then starts over at 1 (null for a plain counter). Added in schema v2. */
+    val repeatLength: Int? = null,
+    /** How many repeats the pattern asks for, if it says (null if not). Added in schema v2. */
+    val repeatTimes: Int? = null,
 )
 
 /** One entry per counter change, so undo works even after the app has been closed. */

@@ -137,6 +137,46 @@
     <string name="import_error_unknown">Something went wrong while importing. Try again.</string>
     <string name="import_url_placeholder">https://…</string>
 
+    <!-- Counter -->
+    <string name="tab_counter">Counter</string>
+    <string name="counter_default_name">Row</string>
+    <string name="counter_undo">Undo</string>
+    <string name="counter_count_up">Add one to %1$s</string>
+    <string name="counter_count_down">Take one from %1$s</string>
+    <string name="counter_open">Open the Counter tab</string>
+    <string name="counter_options">Options for %1$s</string>
+    <string name="counter_set_number">Set number</string>
+    <string name="counter_edit">Edit</string>
+    <string name="counter_reset">Reset to 0</string>
+    <string name="counter_move_up">Move up</string>
+    <string name="counter_move_down">Move down</string>
+    <string name="counter_add">Add counter</string>
+    <string name="counter_new_title">New counter</string>
+    <string name="counter_edit_title">Edit counter</string>
+    <string name="counter_name">Name</string>
+    <string name="counter_name_hint">e.g. Row, Round, Sleeve</string>
+    <string name="counter_repeats">Starts over after a set count</string>
+    <string name="counter_repeats_hint">For instructions like “repeat rows 3–6 five times”.</string>
+    <string name="counter_repeat_length">Count up to</string>
+    <string name="counter_repeat_times">Times (optional)</string>
+    <string name="counter_repeat_progress">of %1$d · repeat %2$d</string>
+    <string name="counter_repeat_progress_times">of %1$d · repeat %2$d of %3$d</string>
+    <plurals name="counter_repeats_done">
+        <item quantity="one">%d repeat done</item>
+        <item quantity="other">All %d repeats done</item>
+    </plurals>
+    <string name="counter_bar_repeat">%1$d of %2$d · repeat %3$d</string>
+    <string name="counter_set_title">Set %1$s</string>
+    <string name="counter_value">Count</string>
+    <string name="counter_in_repeat">Count (1–%1$d)</string>
+    <string name="counter_repeat_number">Repeat</string>
+    <string name="counter_delete_title">Delete “%1$s”?</string>
+    <string name="counter_delete_message">Its count and undo steps will be removed. The pattern stays.</string>
+    <string name="counter_volume_keys">Count with volume buttons</string>
+    <string name="counter_volume_keys_hint">Volume up adds one to the first counter and volume down takes one away, while a counter is showing.</string>
+    <string name="counter_keep_screen_on">Keep screen on</string>
+    <string name="counter_keep_screen_on_hint">While a counter is showing, so the phone doesn’t lock mid-row.</string>
+
     <!-- Saved copy of a web page -->
     <string name="snapshot_caption">Saved from %1$s on %2$s</string>
 </resources>

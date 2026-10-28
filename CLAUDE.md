@@ -49,6 +49,8 @@ Offline, ad-free Android app for storing crochet patterns (from URLs and PDFs) w
 - Logo source is `design/chain-one-logo.svg`; `ic_logo.xml` and `ic_launcher_foreground.xml` are hand-converted from its path
 - DB tests use Robolectric (`./gradlew testDebugUnitTest`)
 - The network is used only in `data/importer/WebClient.kt`; imports wait in `cache/imports/<id>/` (`ImportStaging`) until saved from the review (edit) screen
+- Schema changes: bump the version, add an `AutoMigration` (or a manual one), commit the new `app/schemas/*.json`, and extend `MigrationTest`
+- Counter values are totals; repeat counters derive "3 of 4, repeat 2" via `RepeatProgress`. Undo pops `counter_history` per pattern (capped at 200)
 - Library filters are one SQL query built by `LibraryQuery` (LIKE search, all-of tags); tags are NOCASE-unique and unused ones are deleted automatically
 - Parser test pages in `app/src/test/resources/pages/` are hand-written; never commit copies of real pattern pages
 
@@ -56,4 +58,5 @@ Offline, ad-free Android app for storing crochet patterns (from URLs and PDFs) w
 - Milestone 1 done (all tables exist; schema v1 in `app/schemas/`)
 - Milestone 2 done (URL import + share sheet, pink #D14D72 theme, "ch1" logo as icon and library title)
 - Milestone 3 done (search, status and tag filters, tag rename/merge/delete, status badge on cards and pattern page)
-- Current milestone: 4 (Counter); plan proposed 2026-10-26, waiting for approval
+- Milestone 4 (Counter) built; waiting for the owner to try it. Schema is now v2 (repeat counters; auto-migration, tested in `MigrationTest`)
+- Next milestone: 5 (PDF import and viewer)

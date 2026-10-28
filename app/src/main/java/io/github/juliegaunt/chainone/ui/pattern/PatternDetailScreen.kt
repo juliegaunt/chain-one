@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -44,19 +46,25 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.juliegaunt.chainone.R
@@ -66,11 +74,17 @@ import io.github.juliegaunt.chainone.data.db.Tag
 import io.github.juliegaunt.chainone.ui.components.PatternCover
 import io.github.juliegaunt.chainone.ui.components.colors
 import io.github.juliegaunt.chainone.ui.components.labelRes
+import io.github.juliegaunt.chainone.ui.counter.CounterBar
+import io.github.juliegaunt.chainone.ui.counter.CounterTab
+import io.github.juliegaunt.chainone.ui.counter.CounterUiState
+import io.github.juliegaunt.chainone.ui.counter.CounterViewModel
+import io.github.juliegaunt.chainone.ui.counter.LocalVolumeKeys
 import java.io.File
 
 private enum class DetailTab(val labelRes: Int) {
     OVERVIEW(R.string.tab_overview),
     INSTRUCTIONS(R.string.tab_instructions),
+    COUNTER(R.string.tab_counter),
     WEB_PAGE(R.string.tab_web_page),
 }
 
@@ -81,8 +95,10 @@ fun PatternDetailScreen(
     onEdit: (Long) -> Unit,
     onShowTag: (Long) -> Unit,
     viewModel: PatternDetailViewModel = viewModel(factory = PatternDetailViewModel.Factory),
+    counterViewModel: CounterViewModel = viewModel(factory = CounterViewModel.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val counters by counterViewModel.uiState.collectAsStateWithLifecycle()
     var showMenu by rememberSaveable { mutableStateOf(false) }
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
     var selectedTab by rememberSaveable { mutableStateOf<DetailTab?>(null) }
@@ -163,10 +179,16 @@ fun PatternDetailScreen(
                             Tab(
                                 selected = currentTab == tab,
                                 onClick = { selectedTab = tab },
-                                text = { Text(stringResource(tab.labelRes)) },
-                            )
+                            ) { TabLabel(stringResource(tab.labelRes)) }
                         }
                     }
+                    // A counter is on screen on these tabs: the Counter tab itself, or the bar under the others.
+                    CountingEffects(
+                        active = currentTab != DetailTab.OVERVIEW,
+                        state = counters,
+                        onVolumeUp = counterViewModel::incrementMain,
+                        onVolumeDown = counterViewModel::decrementMain,
+                    )
                     when (currentTab) {
                         DetailTab.OVERVIEW -> OverviewTab(
                             pattern = pattern,
@@ -175,8 +197,24 @@ fun PatternDetailScreen(
                             onStatusChange = viewModel::setStatus,
                             onShowTag = onShowTag,
                         )
-                        DetailTab.INSTRUCTIONS -> InstructionsTab(pattern)
-                        DetailTab.WEB_PAGE -> state.savedPage?.let { SavedPageView(it, Modifier.fillMaxSize()) }
+                        DetailTab.INSTRUCTIONS, DetailTab.WEB_PAGE -> Column(Modifier.fillMaxSize()) {
+                            if (currentTab == DetailTab.INSTRUCTIONS) {
+                                InstructionsTab(pattern, Modifier.weight(1f))
+                            } else {
+                                state.savedPage?.let { SavedPageView(it, Modifier.weight(1f)) }
+                            }
+                            CounterBar(
+                                counter = counters.main,
+                                defaultName = stringResource(R.string.counter_default_name),
+                                onIncrement = counterViewModel::incrementMain,
+                                onDecrement = counterViewModel::decrementMain,
+                                onOpen = { selectedTab = DetailTab.COUNTER },
+                            )
+                        }
+                        DetailTab.COUNTER -> {
+                            LaunchedEffect(Unit) { counterViewModel.ensureCounter() }
+                            CounterTab(counters, counterViewModel)
+                        }
                     }
                 }
             }
@@ -283,10 +321,10 @@ private fun OverviewTab(
 }
 
 @Composable
-private fun InstructionsTab(pattern: Pattern) {
+private fun InstructionsTab(pattern: Pattern, modifier: Modifier = Modifier) {
     Box(
-        Modifier
-            .fillMaxSize()
+        modifier
+            .fillMaxWidth()
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
     ) {
@@ -365,4 +403,50 @@ private fun StatusPicker(status: PatternStatus, onChange: (PatternStatus) -> Uni
             }
         }
     }
+}
+
+/**
+ * While a counter is showing: keeps the screen on and lets the volume buttons count, if those
+ * settings are on. Both stop when the counter goes away.
+ */
+@Composable
+private fun CountingEffects(active: Boolean, state: CounterUiState, onVolumeUp: () -> Unit, onVolumeDown: () -> Unit) {
+    val view = LocalView.current
+    val keepOn = active && state.keepScreenOn
+    DisposableEffect(keepOn) {
+        view.keepScreenOn = keepOn
+        onDispose { view.keepScreenOn = false }
+    }
+
+    val volumeKeys = LocalVolumeKeys.current
+    val haptics = LocalHapticFeedback.current
+    val countWithKeys = active && state.countWithVolumeKeys
+    val up by rememberUpdatedState(onVolumeUp)
+    val down by rememberUpdatedState(onVolumeDown)
+    DisposableEffect(countWithKeys) {
+        val handler: (Boolean) -> Unit = { isUp ->
+            haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+            if (isUp) up() else down()
+        }
+        if (countWithKeys) volumeKeys.handler = handler
+        onDispose { if (volumeKeys.handler === handler) volumeKeys.handler = null }
+    }
+}
+
+/**
+ * A tab label with less side padding than Material's default, so four tabs fit on a phone, and
+ * kept to one line: with large system text it shrinks a little instead of wrapping.
+ */
+@Composable
+private fun TabLabel(text: String) {
+    val style = MaterialTheme.typography.titleSmall
+    val color = LocalContentColor.current
+    BasicText(
+        text,
+        style = style,
+        color = { color },
+        maxLines = 1,
+        autoSize = TextAutoSize.StepBased(minFontSize = 10.sp, maxFontSize = style.fontSize),
+        modifier = Modifier.padding(horizontal = 4.dp, vertical = 14.dp),
+    )
 }

@@ -25,7 +25,27 @@ class AppSettings(context: Context) {
         _libraryLayout.value = layout
     }
 
+    /** The phone's volume buttons count up and down while a counter is showing. Off unless chosen. */
+    private val _countWithVolumeKeys = MutableStateFlow(prefs.getBoolean(KEY_VOLUME_KEYS, false))
+    val countWithVolumeKeys: StateFlow<Boolean> = _countWithVolumeKeys.asStateFlow()
+
+    fun setCountWithVolumeKeys(enabled: Boolean) {
+        prefs.edit { putBoolean(KEY_VOLUME_KEYS, enabled) }
+        _countWithVolumeKeys.value = enabled
+    }
+
+    /** The screen stays on while a counter is showing, so it doesn't lock mid-row. */
+    private val _keepScreenOn = MutableStateFlow(prefs.getBoolean(KEY_KEEP_SCREEN_ON, true))
+    val keepScreenOn: StateFlow<Boolean> = _keepScreenOn.asStateFlow()
+
+    fun setKeepScreenOn(enabled: Boolean) {
+        prefs.edit { putBoolean(KEY_KEEP_SCREEN_ON, enabled) }
+        _keepScreenOn.value = enabled
+    }
+
     private companion object {
         const val KEY_LIBRARY_LAYOUT = "library_layout"
+        const val KEY_VOLUME_KEYS = "count_with_volume_keys"
+        const val KEY_KEEP_SCREEN_ON = "keep_screen_on"
     }
 }

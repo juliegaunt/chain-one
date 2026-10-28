@@ -16,7 +16,7 @@ A personal crochet pattern library for Android, with a built-in row counter.
 | Add and edit patterns by hand | ✅ |
 | Import from a web page (paste a link or share from the browser), with an offline copy of the page | ✅ |
 | Search, tags, status filters | ✅ |
-| Row/stitch counters inside each pattern | Planned |
+| Row/stitch counters inside each pattern (repeat counters, undo, volume-button counting) | ✅ |
 | Import and view PDFs | Planned |
 | Backup and restore to a single zip file | Planned |
 
