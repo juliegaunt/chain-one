@@ -64,6 +64,9 @@ class CounterViewModel(
 
     fun decrementMain() = launch { repository.decrement(repository.mainCounter(patternId, defaultName).id) }
 
+    /** A row tapped in the instructions: the main counter moves there and follows that section. */
+    fun jumpToRow(value: Int, section: Int) = launch { repository.jumpToRow(patternId, defaultName, value, section) }
+
     fun setValue(counterId: Long, value: Int) = launch { repository.setValue(counterId, value) }
 
     fun reset(counterId: Long) = launch { repository.reset(counterId) }

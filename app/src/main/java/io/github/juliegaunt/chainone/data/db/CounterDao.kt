@@ -30,6 +30,9 @@ interface CounterDao {
     @Query("UPDATE counters SET value = :value, updatedAt = :updatedAt WHERE id = :id")
     suspend fun setValue(id: Long, value: Int, updatedAt: Long)
 
+    @Query("UPDATE counters SET rowSection = :section WHERE id = :id")
+    suspend fun setRowSection(id: Long, section: Int?)
+
     @Query("UPDATE counters SET position = :position WHERE id = :id")
     suspend fun setPosition(id: Long, position: Int)
 

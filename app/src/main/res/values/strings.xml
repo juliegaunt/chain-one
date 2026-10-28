@@ -84,6 +84,10 @@
     <string name="pattern_by_designer">by %1$s</string>
     <string name="pattern_change_status">Change status</string>
     <string name="pattern_not_found">This pattern no longer exists.</string>
+    <string name="instructions_rows_hint">The highlighted row follows the counter. Tap a row to move the counter there.</string>
+    <string name="instructions_following">Following “%1$s”. Tap a row to move the counter there, or to follow another part.</string>
+    <string name="instructions_section_number">part %1$d</string>
+    <string name="instructions_move_counter">Move the counter to this row</string>
     <string name="instructions_empty">No instructions yet. Tap the pencil to add them.</string>
     <string name="delete_pattern_title">Delete pattern?</string>
     <string name="delete_pattern_message">“%1$s” and its photos, PDFs and counters will be removed from this phone.</string>

@@ -146,6 +146,11 @@ data class Counter(
     val repeatLength: Int? = null,
     /** How many repeats the pattern asks for, if it says (null if not). Added in schema v2. */
     val repeatTimes: Int? = null,
+    /**
+     * Which run of rows in the instructions this counter follows (the piece or size the
+     * person tapped a row in); null until they do. Added in schema v3.
+     */
+    val rowSection: Int? = null,
 )
 
 /** One entry per counter change, so undo works even after the app has been closed. */

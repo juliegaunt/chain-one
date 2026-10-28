@@ -74,6 +74,16 @@ class CounterRepository(
         if (dao.change(counterId, value, clock(), KEEP_HISTORY) != null && value > counter.value) markStarted(counter.patternId)
     }
 
+    /**
+     * For a row tapped in the instructions: the main counter follows that row's [section] from
+     * now on and jumps to [value] (undoable like any other change).
+     */
+    suspend fun jumpToRow(patternId: Long, defaultName: String, value: Int, section: Int) {
+        val counter = mainCounter(patternId, defaultName)
+        dao.setRowSection(counter.id, section)
+        setValue(counter.id, value)
+    }
+
     suspend fun reset(counterId: Long) {
         dao.change(counterId, 0, clock(), KEEP_HISTORY)
     }

@@ -60,7 +60,7 @@ class MigrationTest {
     }
 
     @Test
-    fun version1LibraryOpensInVersion2WithNothingLost() = runTest {
+    fun version1LibraryOpensInTheCurrentVersionWithNothingLost() = runTest {
         createVersion1Database()
 
         val db = Room.databaseBuilder(context, ChainOneDatabase::class.java, name).allowMainThreadQueries().build()
@@ -74,6 +74,7 @@ class MigrationTest {
             assertEquals(12, counter.value)
             assertNull(counter.repeatLength)
             assertNull(counter.repeatTimes)
+            assertNull(counter.rowSection)
             assertEquals(11, db.counterDao().latestHistory(1)!!.previousValue)
         } finally {
             db.close()

@@ -171,6 +171,21 @@ class CounterTest {
     }
 
     @Test
+    fun tappingARowMovesTheMainCounterAndRemembersTheSection() = runTest {
+        counters.jumpToRow(patternId, "Row", value = 7, section = 2)
+
+        val row = list().single()
+        assertEquals("Row", row.name)
+        assertEquals(7, row.value)
+        assertEquals(2, row.rowSection)
+        assertEquals(PatternStatus.IN_PROGRESS, patterns.getPattern(patternId)!!.status)
+
+        // The jump is an ordinary change: undo takes the count back (the section stays).
+        counters.undo(patternId)
+        assertEquals(0, list().single().value)
+    }
+
+    @Test
     fun deletingThePatternDeletesItsCounters() = runTest {
         counters.add(patternId, "Row")
 

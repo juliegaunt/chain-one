@@ -16,11 +16,13 @@ import androidx.room.RoomDatabase
         Counter::class,
         CounterHistory::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
     autoMigrations = [
         // v2: repeat counters (two new, empty columns on `counters`).
         AutoMigration(from = 1, to = 2),
+        // v3: which section of the instructions a counter follows (one new, empty column).
+        AutoMigration(from = 2, to = 3),
     ],
 )
 abstract class ChainOneDatabase : RoomDatabase() {

@@ -29,8 +29,9 @@ Offline, ad-free Android app for storing crochet patterns (from URLs and PDFs) w
 2. URL import + share sheet (moved ahead of the counter at the owner's request)
 3. Search, tags, status (moved ahead of the counter at the owner's request)
 4. Counter
-5. PDF import and viewer
-6. Backup/restore
+5. Row highlighting: the Instructions tab highlights the row the counter is on (added at the owner's request)
+6. PDF import and viewer
+7. Backup/restore
 
 ## Working style
 - I don't have any experience with Android development; explain any steps I need to do in Android Studio
@@ -50,6 +51,7 @@ Offline, ad-free Android app for storing crochet patterns (from URLs and PDFs) w
 - DB tests use Robolectric (`./gradlew testDebugUnitTest`)
 - The network is used only in `data/importer/WebClient.kt`; imports wait in `cache/imports/<id>/` (`ImportStaging`) until saved from the review (edit) screen
 - Schema changes: bump the version, add an `AutoMigration` (or a manual one), commit the new `app/schemas/*.json`, and extend `MigrationTest`
+- `InstructionRows` finds rows ("Row 3:", "Rnd 3", "R7-R19:", "3.") and splits them into sections where numbering restarts; the main counter's `rowSection` picks the section
 - Counter values are totals; repeat counters derive "3 of 4, repeat 2" via `RepeatProgress`. Undo pops `counter_history` per pattern (capped at 200)
 - Library filters are one SQL query built by `LibraryQuery` (LIKE search, all-of tags); tags are NOCASE-unique and unused ones are deleted automatically
 - Parser test pages in `app/src/test/resources/pages/` are hand-written; never commit copies of real pattern pages
@@ -58,5 +60,6 @@ Offline, ad-free Android app for storing crochet patterns (from URLs and PDFs) w
 - Milestone 1 done (all tables exist; schema v1 in `app/schemas/`)
 - Milestone 2 done (URL import + share sheet, pink #D14D72 theme, "ch1" logo as icon and library title)
 - Milestone 3 done (search, status and tag filters, tag rename/merge/delete, status badge on cards and pattern page)
-- Milestone 4 (Counter) built; waiting for the owner to try it. Schema is now v2 (repeat counters; auto-migration, tested in `MigrationTest`)
-- Next milestone: 5 (PDF import and viewer)
+- Milestone 4 done (counter; schema v2 for repeat counters)
+- Milestone 5 (row highlighting) built; waiting for the owner to try it. Schema is now v3 (`counters.rowSection`)
+- Next milestone: 6 (PDF import and viewer). Possible later: row highlighting on the Web page tab (would need scripts enabled for the app's own code only)

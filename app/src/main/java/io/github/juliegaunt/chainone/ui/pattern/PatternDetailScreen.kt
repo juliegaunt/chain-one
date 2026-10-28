@@ -68,6 +68,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.juliegaunt.chainone.R
+import io.github.juliegaunt.chainone.data.db.Counter
 import io.github.juliegaunt.chainone.data.db.Pattern
 import io.github.juliegaunt.chainone.data.db.PatternStatus
 import io.github.juliegaunt.chainone.data.db.Tag
@@ -199,7 +200,12 @@ fun PatternDetailScreen(
                         )
                         DetailTab.INSTRUCTIONS, DetailTab.WEB_PAGE -> Column(Modifier.fillMaxSize()) {
                             if (currentTab == DetailTab.INSTRUCTIONS) {
-                                InstructionsTab(pattern, Modifier.weight(1f))
+                                InstructionsTab(
+                                    pattern = pattern,
+                                    counter = counters.main,
+                                    onRowTap = { row -> counterViewModel.jumpToRow(row.from, row.section) },
+                                    modifier = Modifier.weight(1f),
+                                )
                             } else {
                                 state.savedPage?.let { SavedPageView(it, Modifier.weight(1f)) }
                             }
@@ -320,22 +326,43 @@ private fun OverviewTab(
     }
 }
 
+/**
+ * The instructions, with the row the main counter is on highlighted. Tapping a row moves the
+ * counter there and makes it follow that row's section (piece or size) from then on.
+ */
 @Composable
-private fun InstructionsTab(pattern: Pattern, modifier: Modifier = Modifier) {
-    Box(
+private fun InstructionsTab(
+    pattern: Pattern,
+    counter: Counter?,
+    onRowTap: (InstructionRow) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val rows = remember(pattern.instructions) { InstructionRows.of(pattern.instructions) }
+    val section = (counter?.rowSection ?: 0).coerceIn(0, (rows.sections.size - 1).coerceAtLeast(0))
+    val highlighted = counter?.let { rows.rowFor(section, it.value) }
+    Column(
         modifier
             .fillMaxWidth()
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         if (pattern.instructions.isBlank()) {
-            Text(
-                stringResource(R.string.instructions_empty),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.align(Alignment.TopStart),
-            )
+            Text(stringResource(R.string.instructions_empty), color = MaterialTheme.colorScheme.onSurfaceVariant)
         } else {
-            InstructionsText(pattern.instructions)
+            if (!rows.isEmpty) {
+                Text(
+                    if (rows.sections.size > 1) {
+                        val title = rows.sections[section].title ?: stringResource(R.string.instructions_section_number, section + 1)
+                        stringResource(R.string.instructions_following, title)
+                    } else {
+                        stringResource(R.string.instructions_rows_hint)
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            InstructionsText(pattern.instructions, rows = rows, highlighted = highlighted, onRowTap = onRowTap)
         }
     }
 }
