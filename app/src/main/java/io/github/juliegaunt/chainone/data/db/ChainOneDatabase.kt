@@ -33,6 +33,8 @@ abstract class ChainOneDatabase : RoomDatabase() {
 
     abstract fun counterDao(): CounterDao
 
+    abstract fun backupDao(): BackupDao
+
     companion object {
         const val FILE_NAME = "chain-one.db"
 

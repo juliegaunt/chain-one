@@ -207,6 +207,37 @@
     <string name="pdf_marker_up">Move marker up a row</string>
     <string name="pdf_marker_down">Move marker down a row</string>
 
+    <!-- Backup and restore -->
+    <string name="backup_menu_back_up">Back up library</string>
+    <string name="backup_menu_restore">Restore from backup</string>
+    <string name="backup_saving">Backing up your library…</string>
+    <string name="backup_reading">Reading the backup…</string>
+    <string name="backup_restoring">Restoring your library…</string>
+    <string name="backup_saved">Backup saved</string>
+    <string name="backup_save_failed">Couldn’t save the backup. Check there’s room where you saved it, then try again.</string>
+    <string name="restore_title">Restore this backup?</string>
+    <!-- %1$s is a date, %2$s "12 patterns", %3$s "9 PDFs" -->
+    <string name="restore_contents">Saved %1$s, with %2$s and %3$s.</string>
+    <plurals name="restore_patterns">
+        <item quantity="one">%d pattern</item>
+        <item quantity="other">%d patterns</item>
+    </plurals>
+    <plurals name="restore_pdfs">
+        <item quantity="one">%d PDF</item>
+        <item quantity="other">%d PDFs</item>
+    </plurals>
+    <plurals name="restore_replaces">
+        <item quantity="one">This replaces everything in Chain One now: your %d pattern, with its photos, PDFs and counters.</item>
+        <item quantity="other">This replaces everything in Chain One now: your %d patterns, with their photos, PDFs and counters.</item>
+    </plurals>
+    <string name="restore_replace">Replace library</string>
+    <string name="restore_confirm">Restore</string>
+    <string name="restore_done">Library restored</string>
+    <string name="restore_read_failed">Couldn’t read that file. Try picking it again.</string>
+    <string name="restore_not_a_backup">That isn’t a Chain One backup. Pick the .zip file made with “Back up library”.</string>
+    <string name="restore_newer_version">This backup was made by a newer version of Chain One. Update the app, then restore it.</string>
+    <string name="restore_damaged">This backup is damaged or incomplete, so nothing was changed. Try another copy of it.</string>
+
     <!-- Saved copy of a web page -->
     <string name="snapshot_caption">Saved from %1$s on %2$s</string>
 </resources>

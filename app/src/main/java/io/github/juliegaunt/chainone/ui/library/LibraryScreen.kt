@@ -62,6 +62,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -98,18 +100,26 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.juliegaunt.chainone.R
 import io.github.juliegaunt.chainone.data.db.LibraryFilter
-import io.github.juliegaunt.chainone.data.db.PatternSummary
 import io.github.juliegaunt.chainone.data.db.PatternStatus
+import io.github.juliegaunt.chainone.data.db.PatternSummary
 import io.github.juliegaunt.chainone.data.db.TagCount
 import io.github.juliegaunt.chainone.data.settings.LibraryLayout
+import io.github.juliegaunt.chainone.ui.backup.BackupDialogs
+import io.github.juliegaunt.chainone.ui.backup.BackupViewModel
+import io.github.juliegaunt.chainone.ui.backup.textRes
 import io.github.juliegaunt.chainone.ui.components.PatternCover
 import io.github.juliegaunt.chainone.ui.components.StatusBadge
 import io.github.juliegaunt.chainone.ui.components.StatusChip
+import java.time.LocalDate
 
 // Leaves room under the last row so the floating "Add" button doesn't cover it.
 private val ListBottomPadding = 96.dp
 
 private const val PDF_TYPE = "application/pdf"
+private const val ZIP_TYPE = "application/zip"
+
+/** Some apps and cloud drives label zip files differently, so a backup is found whichever they use. */
+private val BACKUP_TYPES = arrayOf(ZIP_TYPE, "application/x-zip-compressed", "application/octet-stream")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -121,8 +131,10 @@ fun LibraryScreen(
     showTagRequest: Long? = null,
     onShowTagHandled: () -> Unit = {},
     viewModel: LibraryViewModel = viewModel(factory = LibraryViewModel.Factory),
+    backupViewModel: BackupViewModel = viewModel(factory = BackupViewModel.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val backup by backupViewModel.uiState.collectAsStateWithLifecycle()
     var showAddChoices by rememberSaveable { mutableStateOf(false) }
     var showTagSheet by rememberSaveable { mutableStateOf(false) }
     var renamingTagId by rememberSaveable { mutableStateOf<Long?>(null) }
@@ -130,6 +142,22 @@ fun LibraryScreen(
     val filter = state.filter
     val pickPdf = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let(onImportPdf)
+    }
+    // The system's own save and open screens: the person picks where the backup goes and comes from.
+    val saveBackup = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(ZIP_TYPE)) { uri ->
+        uri?.let(backupViewModel::backUp)
+    }
+    val openBackup = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let(backupViewModel::inspect)
+    }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val backupMessage = backup.message?.let { stringResource(it.textRes) }
+    LaunchedEffect(backupMessage) {
+        if (backupMessage != null) {
+            // Cleared once it's gone, not before: clearing it would cancel this effect, and the snackbar with it.
+            snackbarHostState.showSnackbar(backupMessage, withDismissAction = true)
+            backupViewModel.messageShown()
+        }
     }
 
     BackHandler(enabled = state.isSearching, onBack = viewModel::closeSearch)
@@ -204,9 +232,16 @@ fun LibraryScreen(
                             )
                         }
                     }
+                    if (!state.isSearching) {
+                        LibraryMenu(
+                            onBackUp = { saveBackup.launch("chain-one-backup-${LocalDate.now()}.zip") },
+                            onRestore = { openBackup.launch(BACKUP_TYPES) },
+                        )
+                    }
                 },
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             // A compact version of Material's labelled button: 48dp tall (still easy to tap), with
             // tighter spacing than ExtendedFloatingActionButton allows, so the text fills it.
@@ -267,6 +302,12 @@ fun LibraryScreen(
         }
     }
 
+    BackupDialogs(
+        phase = backup.phase,
+        onConfirmRestore = backupViewModel::confirmRestore,
+        onCancelRestore = backupViewModel::cancelRestore,
+    )
+
     if (showTagSheet) {
         TagFilterSheet(
             tags = state.tags,
@@ -321,6 +362,33 @@ fun LibraryScreen(
                 onAddManually()
             },
         )
+    }
+}
+
+/** The top bar's ⋮ menu: backing up and restoring the whole library. */
+@Composable
+private fun LibraryMenu(onBackUp: () -> Unit, onRestore: () -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { expanded = true }) {
+            Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.action_more))
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.backup_menu_back_up)) },
+                onClick = {
+                    expanded = false
+                    onBackUp()
+                },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.backup_menu_restore)) },
+                onClick = {
+                    expanded = false
+                    onRestore()
+                },
+            )
+        }
     }
 }
 

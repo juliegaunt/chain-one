@@ -56,6 +56,7 @@ Offline, ad-free Android app for storing crochet patterns (from URLs and PDFs) w
 - Counter values are totals; repeat counters derive "3 of 4, repeat 2" via `RepeatProgress`. Undo pops `counter_history` per pattern (capped at 200)
 - Library filters are one SQL query built by `LibraryQuery` (LIKE search, all-of tags) that loads only the card fields (`PatternSummary`); tags are NOCASE-unique and unused ones are deleted automatically. Status and tag filters only show (and only apply) while the search area is open; closing it clears them, but not favorites
 - PDFs are `pattern_attachments` rows; `PdfImporter` stages them like web imports (title from file name, page 1 as cover). Rendering is Android's `PdfRenderer` via `PdfPages` (one thread per open PDF); Robolectric can't render, so tests use a fake `PdfInspector`
+- Backups (`LibraryBackup`): one zip with `backup.json` (`BackupJson`, versioned; every field written out by hand, no undo history) and `files/patterns/...`. Restore replaces everything: unpack to `filesDir/.restore`, swap folders, then `BackupDao.replaceAll` in one transaction (keeps ids, so paths match), rolling the files back if the database refuses. New tables or columns must be added to `BackupJson` and `BackupTest`
 - `PdfViewer` draws pages itself in one canvas (custom zoom/pan/fling, then sharp re-renders of the visible area). The row marker is stored per PDF as page + fractions of page height (schema v4)
 - Parser test pages in `app/src/test/resources/pages/` are hand-written; never commit copies of real pattern pages
 
@@ -65,5 +66,5 @@ Offline, ad-free Android app for storing crochet patterns (from URLs and PDFs) w
 - Milestone 3 done (search, status and tag filters, tag rename/merge/delete, status badge on cards and pattern page)
 - Milestone 4 done (counter; schema v2 for repeat counters)
 - Milestone 5 done (row highlighting; schema v3 for `counters.rowSection`)
-- Milestone 6 (PDF import, viewer, row marker) built; waiting for the owner to try it. Schema is now v4 (row marker columns on `pattern_attachments`). Links to PDFs on the web import screen now import the PDF
-- Next milestone: 7 (backup/restore). Possible later: row highlighting on the Web page tab (would need scripts enabled for the app's own code only); copying a PDF's text into Instructions (Android 15+ only)
+- Milestone 6 done (PDF import, viewer, row marker; schema v4). Links to PDFs on the web import screen import the PDF
+- Milestone 7 (backup/restore) built; waiting for the owner to try it. All planned milestones are then done. Possible later: row highlighting on the Web page tab (would need scripts enabled for the app's own code only); copying a PDF's text into Instructions (Android 15+ only)

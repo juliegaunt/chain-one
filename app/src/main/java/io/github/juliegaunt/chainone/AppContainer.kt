@@ -1,6 +1,7 @@
 package io.github.juliegaunt.chainone
 
 import android.content.Context
+import io.github.juliegaunt.chainone.data.backup.LibraryBackup
 import io.github.juliegaunt.chainone.data.db.ChainOneDatabase
 import io.github.juliegaunt.chainone.data.files.FileStore
 import io.github.juliegaunt.chainone.data.importer.ImportStaging
@@ -24,6 +25,12 @@ class AppContainer(context: Context) {
     val patternRepository = PatternRepository(database.patternDao(), fileStore)
     val counterRepository = CounterRepository(database.counterDao(), database.patternDao())
     val settings = AppSettings(context)
+    val libraryBackup = LibraryBackup(
+        database.backupDao(),
+        context.filesDir,
+        settings,
+        appVersion = context.packageManager.getPackageInfo(context.packageName, 0).versionName.orEmpty(),
+    )
     val importStaging = ImportStaging(File(context.cacheDir, "imports"))
     val pdfImporter = PdfImporter(importStaging, context.contentResolver, RendererPdfInspector())
     val patternImporter = PatternImporter(JsoupWebClient(), importStaging, pdfImporter) { host ->

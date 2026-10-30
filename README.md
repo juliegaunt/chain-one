@@ -19,7 +19,7 @@ A personal crochet pattern library for Android, with a built-in row counter.
 | Row/stitch counters inside each pattern (repeat counters, undo, volume-button counting) | ✅ |
 | The instructions highlight the row the counter is on (tap a row to jump there) | ✅ |
 | Import and view PDFs, with a movable row marker | ✅ |
-| Backup and restore to a single zip file | Planned |
+| Backup and restore to a single zip file | ✅ |
 
 ## Building
 
@@ -85,11 +85,20 @@ Password-protected PDFs can't be shown, because Android's built-in PDF reader ca
 
 **Trying it on the emulator:** drag a PDF from your computer onto the emulator window. It lands in the emulator's **Downloads** folder, where **Add pattern → From a PDF** can find it.
 
+## Backup and restore
+
+Tap **⋮ → Back up library** on the main screen and choose where to save the file, such as Downloads, Google Drive or a USB stick. You get one `.zip` file holding every pattern with its photos, PDFs, saved web pages, tags, counters and row markers, plus your settings. Chain One never sends it anywhere itself.
+
+To restore, tap **⋮ → Restore from backup** and pick the file. Chain One shows what the backup holds before changing anything. Restoring **replaces** the whole library with the backup's, so patterns added since the backup was made are removed. If the file is damaged, isn't a Chain One backup, or was made by a newer version of the app, nothing is changed. The counters come back at their numbers, but the undo history starts fresh.
+
+Inside the zip, `backup.json` lists everything in plain text, and `files/` holds each pattern's photos and PDFs.
+
 ## Project layout
 
 ```
 app/src/main/java/io/github/juliegaunt/chainone/
 ├── data/
+│   ├── backup/       Backup to, and restore from, one zip file
 │   ├── db/           Room database: tables (Entities.kt) and queries (DAOs)
 │   ├── files/        Copies photos and PDFs into app-private storage
 │   ├── importer/     Web and PDF import: downloads a page, reads the pattern out of it, saves an offline copy

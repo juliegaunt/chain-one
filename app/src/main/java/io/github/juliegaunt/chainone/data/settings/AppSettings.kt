@@ -43,6 +43,17 @@ class AppSettings(context: Context) {
         _keepScreenOn.value = enabled
     }
 
+    /** All the settings at once, for backups. */
+    data class Snapshot(val libraryLayout: LibraryLayout, val countWithVolumeKeys: Boolean, val keepScreenOn: Boolean)
+
+    fun snapshot() = Snapshot(libraryLayout.value, countWithVolumeKeys.value, keepScreenOn.value)
+
+    fun restore(snapshot: Snapshot) {
+        setLibraryLayout(snapshot.libraryLayout)
+        setCountWithVolumeKeys(snapshot.countWithVolumeKeys)
+        setKeepScreenOn(snapshot.keepScreenOn)
+    }
+
     private companion object {
         const val KEY_LIBRARY_LAYOUT = "library_layout"
         const val KEY_VOLUME_KEYS = "count_with_volume_keys"
