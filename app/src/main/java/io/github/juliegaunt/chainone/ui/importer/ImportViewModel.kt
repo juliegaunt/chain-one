@@ -38,6 +38,7 @@ data class ImportUiState(
     val phase: ImportPhase = ImportPhase.Idle,
 )
 
+/** Downloads a pattern page from a link and stages it for the review screen. */
 class ImportViewModel(
     savedStateHandle: SavedStateHandle,
     private val repository: PatternRepository,

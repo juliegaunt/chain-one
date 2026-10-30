@@ -6,8 +6,8 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.juliegaunt.chainone.appContainer
 import io.github.juliegaunt.chainone.data.db.LibraryFilter
-import io.github.juliegaunt.chainone.data.db.PatternSummary
 import io.github.juliegaunt.chainone.data.db.PatternStatus
+import io.github.juliegaunt.chainone.data.db.PatternSummary
 import io.github.juliegaunt.chainone.data.db.TagCount
 import io.github.juliegaunt.chainone.data.files.FileStore
 import io.github.juliegaunt.chainone.data.repository.PatternRepository
@@ -39,6 +39,7 @@ data class LibraryUiState(
     val isLoading: Boolean = true,
 )
 
+/** The library's patterns with the current search and filters applied, and every tag. */
 class LibraryViewModel(
     private val repository: PatternRepository,
     private val fileStore: FileStore,

@@ -1,8 +1,8 @@
 package io.github.juliegaunt.chainone
 
 import android.app.Application
-import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
+import androidx.lifecycle.viewmodel.CreationExtras
 
 class ChainOneApp : Application() {
     lateinit var container: AppContainer

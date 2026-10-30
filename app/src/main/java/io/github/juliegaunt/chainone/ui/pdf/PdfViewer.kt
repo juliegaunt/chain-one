@@ -1,12 +1,9 @@
-package io.github.juliegaunt.chainone.ui.pattern
+package io.github.juliegaunt.chainone.ui.pdf
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.AnimationState
 import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.animateDecay
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.animation.rememberSplineBasedDecay
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -16,29 +13,16 @@ import androidx.compose.foundation.gestures.calculateCentroidSize
 import androidx.compose.foundation.gestures.calculatePan
 import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilledTonalIconButton
-import androidx.compose.material3.FilledTonalIconToggleButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -65,7 +49,6 @@ import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -75,7 +58,6 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import io.github.juliegaunt.chainone.R
 import io.github.juliegaunt.chainone.data.db.RowMarker
-import io.github.juliegaunt.chainone.data.pdf.PageSize
 import io.github.juliegaunt.chainone.data.pdf.PdfOpenException
 import io.github.juliegaunt.chainone.data.pdf.PdfPages
 import io.github.juliegaunt.chainone.data.pdf.PdfProblem
@@ -375,81 +357,19 @@ private fun PdfPagesView(
             },
     )
 
-    Box(Modifier.fillMaxSize()) {
-        Column(
-            Modifier
-                .align(Alignment.TopEnd)
-                .padding(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            FilledTonalIconToggleButton(
-                checked = marker != null,
-                onCheckedChange = { on ->
-                    val placed = if (on) viewport.newMarker() else null
-                    marker = placed
-                    showHint = on
-                    saveMarker(placed)
-                },
-            ) {
-                Icon(
-                    painterResource(R.drawable.ic_row_marker),
-                    contentDescription = stringResource(if (marker == null) R.string.pdf_marker_show else R.string.pdf_marker_hide),
-                )
-            }
-            if (marker != null) {
-                FilledTonalIconButton(onClick = { stepMarker(-1) }) {
-                    Icon(Icons.Filled.KeyboardArrowUp, contentDescription = stringResource(R.string.pdf_marker_up))
-                }
-                FilledTonalIconButton(onClick = { stepMarker(1) }) {
-                    Icon(Icons.Filled.KeyboardArrowDown, contentDescription = stringResource(R.string.pdf_marker_down))
-                }
-            }
-        }
-        AnimatedVisibility(
-            visible = showHint,
-            enter = fadeIn(),
-            exit = fadeOut(),
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(start = 8.dp, top = 8.dp, end = 64.dp),
-        ) {
-            Surface(
-                color = MaterialTheme.colorScheme.inverseSurface,
-                contentColor = MaterialTheme.colorScheme.inverseOnSurface,
-                shape = RoundedCornerShape(8.dp),
-            ) {
-                Text(
-                    stringResource(R.string.pdf_marker_hint),
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                )
-            }
-        }
-        Surface(
-            color = MaterialTheme.colorScheme.inverseSurface.copy(alpha = 0.8f),
-            contentColor = MaterialTheme.colorScheme.inverseOnSurface,
-            shape = CircleShape,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(8.dp),
-        ) {
-            Text(
-                stringResource(R.string.pdf_page_of, currentPage + 1, pages.pageCount),
-                style = MaterialTheme.typography.labelMedium,
-                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-            )
-        }
-    }
-}
-
-/** The marker moved by its own height, onto the next or previous page past an edge. */
-internal fun stepped(marker: RowMarker, rows: Int, pageCount: Int): RowMarker {
-    val top = marker.top + rows * marker.height
-    return when {
-        top < 0f && marker.page > 0 -> marker.copy(page = marker.page - 1, top = 1f - marker.height)
-        top + marker.height > 1f && marker.page < pageCount - 1 -> marker.copy(page = marker.page + 1, top = 0f)
-        else -> marker.copy(top = top.coerceIn(0f, 1f - marker.height))
-    }
+    PdfOverlay(
+        markerOn = marker != null,
+        showHint = showHint,
+        page = currentPage,
+        pageCount = pages.pageCount,
+        onMarkerToggle = { on ->
+            val placed = if (on) viewport.newMarker() else null
+            marker = placed
+            showHint = on
+            saveMarker(placed)
+        },
+        onMarkerStep = ::stepMarker,
+    )
 }
 
 private fun DrawScope.drawImageInto(image: ImageBitmap, rect: Rect) {
@@ -477,160 +397,6 @@ private fun DrawScope.drawMarker(viewport: PdfViewport, marker: RowMarker, color
     )
 }
 
-/**
- * Where the viewer is looking, in screen pixels. At zoom 1 each page is as wide as the viewer;
- * pages sit one under another with a small gap.
- */
-@Stable
-private class PdfViewport(private val pageSizes: List<PageSize>, private val gapPx: Float, private val initialPage: Int) {
-    var width by mutableFloatStateOf(0f)
-        private set
-    var height by mutableFloatStateOf(0f)
-        private set
-    var scale by mutableFloatStateOf(1f)
-        private set
-    var x by mutableFloatStateOf(0f)
-        private set
-    var y by mutableFloatStateOf(0f)
-        private set
-
-    // Page tops and heights at zoom 1; they change only with the viewer's width.
-    private var tops = FloatArray(0)
-    private var heights = FloatArray(0)
-    private var contentHeight = 0f
-
-    val pageWidth: Float get() = width * scale
-
-    fun pageHeight(page: Int): Float = heights[page] * scale
-
-    /**
-     * The page at the top quarter of the screen, which is where people read. It checks [width]
-     * (state) rather than the page tops (not state), so a derivedStateOf of it updates once the
-     * viewer has been measured.
-     */
-    val currentPage: Int
-        get() = if (width <= 0f) initialPage else pageAtContentY((y + height / 4) / scale)
-
-    fun setSize(newWidth: Float, newHeight: Float) {
-        if (newWidth == width && newHeight == height) return
-        val widthChanged = newWidth != width
-        // After turning the phone, stay on the same page.
-        val anchor = currentPage
-        width = newWidth
-        height = newHeight
-        if (widthChanged) {
-            heights = FloatArray(pageSizes.size) { newWidth * pageSizes[it].height / pageSizes[it].width }
-            tops = FloatArray(pageSizes.size)
-            var top = 0f
-            for (i in pageSizes.indices) {
-                tops[i] = top
-                top += heights[i] + gapPx
-            }
-            contentHeight = top - gapPx
-            y = tops[anchor] * scale
-        }
-        clamp()
-    }
-
-    fun visiblePages(): IntRange {
-        if (tops.isEmpty() || height <= 0f) return IntRange.EMPTY
-        val first = pageAtContentY(y / scale)
-        var last = first
-        while (last + 1 < tops.size && tops[last + 1] * scale < y + height) last++
-        return first..last
-    }
-
-    fun pageRect(page: Int): Rect {
-        val top = tops[page] * scale - y
-        return Rect(-x, top, -x + pageWidth, top + pageHeight(page))
-    }
-
-    /** The part of [page] on screen, as fractions of the page, or null if none is. */
-    fun visibleArea(page: Int): Rect? {
-        val rect = pageRect(page)
-        val visible = rect.intersect(Rect(0f, 0f, width, height))
-        if (visible.isEmpty) return null
-        return Rect(
-            (visible.left - rect.left) / rect.width,
-            (visible.top - rect.top) / rect.height,
-            (visible.right - rect.left) / rect.width,
-            (visible.bottom - rect.top) / rect.height,
-        )
-    }
-
-    /** The page under [point] and how far down it the point is (0 at the top, 1 at the bottom). */
-    fun pageAt(point: Offset): Pair<Int, Float>? {
-        if (tops.isEmpty()) return null
-        val contentY = (y + point.y) / scale
-        val page = pageAtContentY(contentY)
-        val fraction = (contentY - tops[page]) / heights[page]
-        return if (fraction in 0f..1f) page to fraction else null
-    }
-
-    fun markerRect(marker: RowMarker): Rect {
-        val page = pageRect(marker.page)
-        val top = page.top + marker.top * page.height
-        return Rect(page.left, top, page.right, top + marker.height * page.height)
-    }
-
-    /** The resize tab sits on the marker's bottom edge near the right, where pages usually have a margin. */
-    fun gripCenter(marker: RowMarker, insetPx: Float): Offset {
-        val bar = markerRect(marker)
-        return Offset(min(bar.right, width) - insetPx, bar.bottom)
-    }
-
-    /** A marker on the page being read, a third of the way down the screen. */
-    fun newMarker(): RowMarker {
-        val (page, fraction) = pageAt(Offset(width / 2, height / 3)) ?: (currentPage to DEFAULT_MARKER_TOP)
-        return RowMarker(page, fraction.coerceIn(0f, 1f - DEFAULT_MARKER_HEIGHT), DEFAULT_MARKER_HEIGHT)
-    }
-
-    /** Scrolls so [marker] is on screen, if it isn't. */
-    fun reveal(marker: RowMarker) {
-        val bar = markerRect(marker)
-        if (bar.top < 0f || bar.bottom > height) {
-            y += bar.top - height / 3
-            clamp()
-        }
-    }
-
-    /** Moves the view with a finger's movement. Returns false if it was already at the edge. */
-    fun panBy(dx: Float, dy: Float): Boolean {
-        val oldX = x
-        val oldY = y
-        x -= dx
-        y -= dy
-        clamp()
-        return x != oldX || y != oldY
-    }
-
-    /** Zooms by [factor], keeping the point under [focus] where it is. */
-    fun zoomBy(factor: Float, focus: Offset) {
-        val newScale = (scale * factor).coerceIn(1f, MAX_SCALE)
-        val change = newScale / scale
-        x = (x + focus.x) * change - focus.x
-        y = (y + focus.y) * change - focus.y
-        scale = newScale
-        clamp()
-    }
-
-    private fun clamp() {
-        x = x.coerceIn(0f, max(0f, pageWidth - width))
-        y = y.coerceIn(0f, max(0f, contentHeight * scale - height))
-    }
-
-    /** The last page starting at or above [contentY] (at zoom 1). */
-    private fun pageAtContentY(contentY: Float): Int {
-        var low = 0
-        var high = tops.size - 1
-        while (low < high) {
-            val mid = (low + high + 1) / 2
-            if (tops[mid] <= contentY) low = mid else high = mid - 1
-        }
-        return low
-    }
-}
-
 private val PageGap = 8.dp
 private val MarkerMinTouch = 36.dp
 private val MarkerGripTouch = 48.dp
@@ -638,7 +404,6 @@ private val MarkerGripWidth = 32.dp
 private val MarkerGripHeight = 10.dp
 private val MarkerGripInset = 40.dp
 
-private const val MAX_SCALE = 5f
 private const val DOUBLE_TAP_SCALE = 2.5f
 private const val MAX_BASE_WIDTH_PX = 1440f
 
@@ -647,7 +412,4 @@ private const val SHARPEN_ABOVE = 1.15f
 private const val SHARPEN_DELAY_MS = 150L
 private const val HINT_MS = 5_000L
 
-/** About two lines of a typical pattern PDF. */
-private const val DEFAULT_MARKER_HEIGHT = 0.035f
-private const val DEFAULT_MARKER_TOP = 0.3f
 private const val MIN_MARKER_HEIGHT = 0.008f

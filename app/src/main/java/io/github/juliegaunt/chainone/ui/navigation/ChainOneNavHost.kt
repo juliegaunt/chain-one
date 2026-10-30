@@ -16,6 +16,7 @@ import io.github.juliegaunt.chainone.ui.importer.PdfImportScreen
 import io.github.juliegaunt.chainone.ui.library.LibraryScreen
 import io.github.juliegaunt.chainone.ui.pattern.PatternDetailScreen
 
+/** The app's screens, and how to build the route to each. */
 object Routes {
     const val LIBRARY = "library"
     const val PATTERN = "pattern/{$ARG_PATTERN_ID}"

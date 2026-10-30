@@ -9,10 +9,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,6 +33,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import io.github.juliegaunt.chainone.R
+import io.github.juliegaunt.chainone.data.db.Counter
+import io.github.juliegaunt.chainone.data.db.Pattern
 
 sealed interface InstructionBlock {
     data class Heading(val text: String) : InstructionBlock
@@ -161,4 +166,45 @@ private fun <T, K> List<T>.groupConsecutive(key: (T) -> K): List<Pair<K, List<T>
         if (groups.isNotEmpty() && groups.last().first == k) groups.last().second += item else groups += k to mutableListOf(item)
     }
     return groups
+}
+
+/**
+ * The instructions, with the row the main counter is on highlighted. Tapping a row moves the
+ * counter there and makes it follow that row's section (piece or size) from then on.
+ */
+@Composable
+fun InstructionsTab(
+    pattern: Pattern,
+    counter: Counter?,
+    onRowTap: (InstructionRow) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val rows = remember(pattern.instructions) { InstructionRows.of(pattern.instructions) }
+    val section = (counter?.rowSection ?: 0).coerceIn(0, (rows.sections.size - 1).coerceAtLeast(0))
+    val highlighted = counter?.let { rows.rowFor(section, it.value) }
+    Column(
+        modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        if (pattern.instructions.isBlank()) {
+            Text(stringResource(R.string.instructions_empty), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        } else {
+            if (!rows.isEmpty) {
+                Text(
+                    if (rows.sections.size > 1) {
+                        val title = rows.sections[section].title ?: stringResource(R.string.instructions_section_number, section + 1)
+                        stringResource(R.string.instructions_following, title)
+                    } else {
+                        stringResource(R.string.instructions_rows_hint)
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            InstructionsText(pattern.instructions, rows = rows, highlighted = highlighted, onRowTap = onRowTap)
+        }
+    }
 }

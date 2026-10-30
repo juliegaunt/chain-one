@@ -1,6 +1,5 @@
 package io.github.juliegaunt.chainone.ui.backup
 
-import io.github.juliegaunt.chainone.ui.components.ProgressRow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.AlertDialog
@@ -14,6 +13,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import io.github.juliegaunt.chainone.R
+import io.github.juliegaunt.chainone.ui.components.ProgressRow
 import java.text.DateFormat
 import java.util.Date
 

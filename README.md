@@ -105,7 +105,17 @@ app/src/main/java/io/github/juliegaunt/chainone/
 │   ├── pdf/          Draws PDF pages with Android's built-in PDF reader
 │   ├── repository/   Keeps the database and files in step
 │   └── settings/     Small UI preferences
-└── ui/               Jetpack Compose screens, one folder per screen
+└── ui/               Jetpack Compose screens
+    ├── backup/       Back up and restore dialogs
+    ├── components/   Pieces shared by several screens: covers, status chips, dialogs, progress and errors
+    ├── counter/      The Counter tab, the counter bar and volume-button counting
+    ├── edit/         Adding, editing and reviewing a pattern
+    ├── importer/     Import from a link or a PDF
+    ├── library/      The main screen: grid or list, search, filters
+    ├── navigation/   Moving between screens, and what other apps share with Chain One
+    ├── pattern/      A pattern's page and its Overview, Instructions and Web page tabs
+    ├── pdf/          The PDF tab: page viewer, zoom and the row marker
+    └── theme/        Colors and type
 app/src/test/         Unit tests (run on your computer)
 app/schemas/          Database schema history, used for future upgrades
 design/               Logo source files (the app's icon and title are converted from the SVG)

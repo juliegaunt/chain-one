@@ -37,6 +37,7 @@ data class PatternDetailUiState(
     val isDeleted: Boolean = false,
 )
 
+/** One pattern with its tags and PDFs, for the pattern page. */
 class PatternDetailViewModel(
     savedStateHandle: SavedStateHandle,
     private val repository: PatternRepository,

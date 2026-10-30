@@ -1,4 +1,4 @@
-package io.github.juliegaunt.chainone.ui.pattern
+package io.github.juliegaunt.chainone.ui.pdf
 
 import io.github.juliegaunt.chainone.data.db.RowMarker
 import org.junit.Assert.assertEquals

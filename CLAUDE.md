@@ -48,6 +48,8 @@ Offline, ad-free Android app for storing crochet patterns (from URLs and PDFs) w
 - Navigation Compose with string routes (`ui/navigation/ChainOneNavHost.kt`)
 - File paths in the DB are relative to `filesDir`, under `patterns/<id>/` (see `FileStore`)
 - UI strings go in `res/values/strings.xml`
+- Each screen's `XScreen.kt` holds the scaffold and wiring; its parts live in their own files beside it (e.g. `OverviewTab.kt`, `CounterCard.kt`, `LibraryTopBar.kt`). Pieces used by several screens go in `ui/components` (`ConfirmDialog`, `RenameDialog`, `ProgressRow`, `ErrorCard`, `PatternCover`, `StatusChip`); reuse them rather than building another `AlertDialog`
+- Data access is one DAO and one repository per area: patterns (`PatternDao`/`PatternRepository`), PDFs (`PdfDao`/`PdfRepository`), counters (`CounterDao`/`CounterRepository`), backups (`BackupDao`/`LibraryBackup`)
 - Logo source is `design/chain-one-logo.svg`; `ic_logo.xml` and `ic_launcher_foreground.xml` are hand-converted from its path
 - The launch screen (Android 12+, `values-v31` and `values-night-v31` themes) uses `ic_splash.xml`: the same logo path plus "Chain One" as Noto Sans Medium outlines (made with fontTools), kept inside the 192dp circle of the 288dp canvas
 - DB tests use Robolectric (`./gradlew testDebugUnitTest`)
@@ -58,7 +60,7 @@ Offline, ad-free Android app for storing crochet patterns (from URLs and PDFs) w
 - Library filters are one SQL query built by `LibraryQuery` (LIKE search, all-of tags) that loads only the card fields (`PatternSummary`); tags are NOCASE-unique and unused ones are deleted automatically. Status and tag filters only show (and only apply) while the search area is open; closing it clears them, but not favorites
 - PDFs are `pattern_attachments` rows; `PdfImporter` stages them like web imports (title from file name, page 1 as cover). Rendering is Android's `PdfRenderer` via `PdfPages` (one thread per open PDF); Robolectric can't render, so tests use a fake `PdfInspector`
 - Backups (`LibraryBackup`): one zip with `backup.json` (`BackupJson`, versioned; every field written out by hand, no undo history) and `files/patterns/...`. Restore replaces everything: unpack to `filesDir/.restore`, swap folders, then `BackupDao.replaceAll` in one transaction (keeps ids, so paths match), rolling the files back if the database refuses. New tables or columns must be added to `BackupJson` and `BackupTest`
-- `PdfViewer` draws pages itself in one canvas (custom zoom/pan/fling, then sharp re-renders of the visible area). The row marker is stored per PDF as page + fractions of page height (schema v4)
+- `ui/pdf`: `PdfViewer` draws pages itself in one canvas (custom zoom/pan/fling, then sharp re-renders of the visible area); `PdfViewport` holds the zoom/scroll maths; `PdfOverlay` the buttons. The row marker is stored per PDF as page + fractions of page height (schema v4)
 - Parser test pages in `app/src/test/resources/pages/` are hand-written; never commit copies of real pattern pages
 
 ## Progress

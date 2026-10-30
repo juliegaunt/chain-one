@@ -1,7 +1,5 @@
 package io.github.juliegaunt.chainone.ui.importer
 
-import io.github.juliegaunt.chainone.ui.components.ProgressRow
-import io.github.juliegaunt.chainone.ui.components.ErrorCard
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -42,8 +40,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.juliegaunt.chainone.R
 import io.github.juliegaunt.chainone.data.importer.ImportProblem
+import io.github.juliegaunt.chainone.ui.components.ErrorCard
+import io.github.juliegaunt.chainone.ui.components.ProgressRow
 import kotlinx.coroutines.launch
 
+/** Paste a link (or share one from the browser) to import a pattern; it then opens for review. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ImportScreen(

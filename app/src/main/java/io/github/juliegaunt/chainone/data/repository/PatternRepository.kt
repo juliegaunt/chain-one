@@ -5,7 +5,6 @@ import io.github.juliegaunt.chainone.data.db.LibraryFilter
 import io.github.juliegaunt.chainone.data.db.LibraryQuery
 import io.github.juliegaunt.chainone.data.db.Pattern
 import io.github.juliegaunt.chainone.data.db.PatternDao
-import io.github.juliegaunt.chainone.data.db.PatternImage
 import io.github.juliegaunt.chainone.data.db.PatternStatus
 import io.github.juliegaunt.chainone.data.db.PatternSummary
 import io.github.juliegaunt.chainone.data.db.SourceType

@@ -1,7 +1,5 @@
 package io.github.juliegaunt.chainone.ui.importer
 
-import io.github.juliegaunt.chainone.ui.components.ProgressRow
-import io.github.juliegaunt.chainone.ui.components.ErrorCard
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -23,7 +21,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.juliegaunt.chainone.R
 import io.github.juliegaunt.chainone.data.pdf.PdfProblem
+import io.github.juliegaunt.chainone.ui.components.ErrorCard
+import io.github.juliegaunt.chainone.ui.components.ProgressRow
 
+/** Shown while a picked or shared PDF is copied in; then the review screen opens. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PdfImportScreen(
