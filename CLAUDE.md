@@ -54,7 +54,7 @@ Offline, ad-free Android app for storing crochet patterns (from URLs and PDFs) w
 - Schema changes: bump the version, add an `AutoMigration` (or a manual one), commit the new `app/schemas/*.json`, and extend `MigrationTest`
 - `InstructionRows` finds rows ("Row 3:", "Rnd 3", "R7-R19:", "3.") and splits them into sections where numbering restarts; the main counter's `rowSection` picks the section
 - Counter values are totals; repeat counters derive "3 of 4, repeat 2" via `RepeatProgress`. Undo pops `counter_history` per pattern (capped at 200)
-- Library filters are one SQL query built by `LibraryQuery` (LIKE search, all-of tags); tags are NOCASE-unique and unused ones are deleted automatically
+- Library filters are one SQL query built by `LibraryQuery` (LIKE search, all-of tags); tags are NOCASE-unique and unused ones are deleted automatically. Status and tag filters only show (and only apply) while the search area is open; closing it clears them, but not favorites
 - PDFs are `pattern_attachments` rows; `PdfImporter` stages them like web imports (title from file name, page 1 as cover). Rendering is Android's `PdfRenderer` via `PdfPages` (one thread per open PDF); Robolectric can't render, so tests use a fake `PdfInspector`
 - `PdfViewer` draws pages itself in one canvas (custom zoom/pan/fling, then sharp re-renders of the visible area). The row marker is stored per PDF as page + fractions of page height (schema v4)
 - Parser test pages in `app/src/test/resources/pages/` are hand-written; never commit copies of real pattern pages

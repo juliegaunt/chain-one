@@ -80,6 +80,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
@@ -151,7 +152,12 @@ fun LibraryScreen(
                 },
                 title = {
                     if (state.isSearching) {
-                        SearchField(filter.search, onChange = viewModel::updateSearch)
+                        // Opened by tapping a tag on a pattern's page, the tag is the search; no keyboard.
+                        SearchField(
+                            filter.search,
+                            onChange = viewModel::updateSearch,
+                            focus = filter.tagIds.isEmpty() && filter.statuses.isEmpty(),
+                        )
                     } else {
                         // The "ch1" logo in place of the app name; screen readers still say "Chain One".
                         Icon(
@@ -226,7 +232,8 @@ fun LibraryScreen(
                 .fillMaxSize()
                 .padding(padding),
         ) {
-            if (state.hasPatterns) {
+            // Status and tag filters are part of searching, so they only show while it's open.
+            if (state.hasPatterns && state.isSearching) {
                 FilterRow(
                     filter = filter,
                     tags = state.tags,
@@ -372,10 +379,10 @@ private fun EmptyMessage(text: String, modifier: Modifier = Modifier, action: @C
 
 /** The search box that replaces the logo while searching. It opens with the keyboard up. */
 @Composable
-private fun SearchField(text: String, onChange: (String) -> Unit) {
+private fun SearchField(text: String, onChange: (String) -> Unit, focus: Boolean) {
     val focusRequester = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
-    LaunchedEffect(Unit) { focusRequester.requestFocus() }
+    LaunchedEffect(Unit) { if (focus) focusRequester.requestFocus() }
     TextField(
         value = text,
         onValueChange = onChange,
@@ -395,7 +402,7 @@ private fun SearchField(text: String, onChange: (String) -> Unit) {
     )
 }
 
-/** Status and tag filters under the top bar; it scrolls sideways on narrow screens. */
+/** Status and tag filters under the search box; it scrolls sideways on narrow screens. */
 @Composable
 private fun FilterRow(
     filter: LibraryFilter,
@@ -404,6 +411,8 @@ private fun FilterRow(
     onOpenTags: () -> Unit,
     onClear: () -> Unit,
 ) {
+    // Picking a filter means the person is done typing; the keyboard would hide the results.
+    val focusManager = LocalFocusManager.current
     Row(
         Modifier
             .fillMaxWidth()
@@ -413,12 +422,18 @@ private fun FilterRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         PatternStatus.entries.forEach { status ->
-            StatusChip(status, selected = status in filter.statuses, onClick = { onToggleStatus(status) })
+            StatusChip(status, selected = status in filter.statuses, onClick = {
+                focusManager.clearFocus()
+                onToggleStatus(status)
+            })
         }
         val selectedTags = tags.filter { it.id in filter.tagIds }
         FilterChip(
             selected = selectedTags.isNotEmpty(),
-            onClick = onOpenTags,
+            onClick = {
+                focusManager.clearFocus()
+                onOpenTags()
+            },
             label = {
                 Text(
                     when (selectedTags.size) {

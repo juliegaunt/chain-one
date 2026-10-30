@@ -82,20 +82,26 @@ class LibraryViewModel(
         }
     }
 
-    /** For a tag tapped on a pattern's page: just the patterns with that tag, nothing else filtered. */
+    /**
+     * For a tag tapped on a pattern's page: just the patterns with that tag, nothing else filtered.
+     * The filters live in the search area, so it opens to show the tag.
+     */
     fun showOnlyTag(tagId: Long) {
         filter.value = LibraryFilter(tagIds = setOf(tagId))
-        isSearching.value = false
+        isSearching.value = true
     }
 
     fun openSearch() {
         isSearching.value = true
     }
 
-    /** Closing the search box also clears what was typed in it. */
+    /**
+     * Closing the search area clears what was typed and the status and tag filters with it, since
+     * they're only shown there. Favorites stays: its heart is always in the top bar.
+     */
     fun closeSearch() {
         isSearching.value = false
-        filter.update { it.copy(search = "") }
+        filter.update { LibraryFilter(favoritesOnly = it.favoritesOnly) }
     }
 
     fun updateSearch(text: String) {
@@ -120,7 +126,6 @@ class LibraryViewModel(
 
     fun clearFilters() {
         filter.value = LibraryFilter()
-        isSearching.value = false
     }
 
     fun renameTag(tagId: Long, name: String) {
