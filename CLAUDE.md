@@ -54,6 +54,8 @@ Offline, ad-free Android app for storing crochet patterns (from URLs and PDFs) w
 - `InstructionRows` finds rows ("Row 3:", "Rnd 3", "R7-R19:", "3.") and splits them into sections where numbering restarts; the main counter's `rowSection` picks the section
 - Counter values are totals; repeat counters derive "3 of 4, repeat 2" via `RepeatProgress`. Undo pops `counter_history` per pattern (capped at 200)
 - Library filters are one SQL query built by `LibraryQuery` (LIKE search, all-of tags); tags are NOCASE-unique and unused ones are deleted automatically
+- PDFs are `pattern_attachments` rows; `PdfImporter` stages them like web imports (title from file name, page 1 as cover). Rendering is Android's `PdfRenderer` via `PdfPages` (one thread per open PDF); Robolectric can't render, so tests use a fake `PdfInspector`
+- `PdfViewer` draws pages itself in one canvas (custom zoom/pan/fling, then sharp re-renders of the visible area). The row marker is stored per PDF as page + fractions of page height (schema v4)
 - Parser test pages in `app/src/test/resources/pages/` are hand-written; never commit copies of real pattern pages
 
 ## Progress
@@ -61,5 +63,6 @@ Offline, ad-free Android app for storing crochet patterns (from URLs and PDFs) w
 - Milestone 2 done (URL import + share sheet, pink #D14D72 theme, "ch1" logo as icon and library title)
 - Milestone 3 done (search, status and tag filters, tag rename/merge/delete, status badge on cards and pattern page)
 - Milestone 4 done (counter; schema v2 for repeat counters)
-- Milestone 5 (row highlighting) built; waiting for the owner to try it. Schema is now v3 (`counters.rowSection`)
-- Next milestone: 6 (PDF import and viewer). Possible later: row highlighting on the Web page tab (would need scripts enabled for the app's own code only)
+- Milestone 5 done (row highlighting; schema v3 for `counters.rowSection`)
+- Milestone 6 (PDF import, viewer, row marker) built; waiting for the owner to try it. Schema is now v4 (row marker columns on `pattern_attachments`). Links to PDFs on the web import screen now import the PDF
+- Next milestone: 7 (backup/restore). Possible later: row highlighting on the Web page tab (would need scripts enabled for the app's own code only); copying a PDF's text into Instructions (Android 15+ only)

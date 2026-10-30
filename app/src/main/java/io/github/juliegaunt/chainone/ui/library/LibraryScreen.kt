@@ -1,6 +1,9 @@
 package io.github.juliegaunt.chainone.ui.library
 
+import android.net.Uri
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -105,12 +108,15 @@ import io.github.juliegaunt.chainone.ui.components.StatusChip
 // Leaves room under the last row so the floating "Add" button doesn't cover it.
 private val ListBottomPadding = 96.dp
 
+private const val PDF_TYPE = "application/pdf"
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LibraryScreen(
     onOpenPattern: (Long) -> Unit,
     onAddManually: () -> Unit,
     onImportFromWeb: () -> Unit,
+    onImportPdf: (Uri) -> Unit,
     showTagRequest: Long? = null,
     onShowTagHandled: () -> Unit = {},
     viewModel: LibraryViewModel = viewModel(factory = LibraryViewModel.Factory),
@@ -121,6 +127,9 @@ fun LibraryScreen(
     var renamingTagId by rememberSaveable { mutableStateOf<Long?>(null) }
     var deletingTagId by rememberSaveable { mutableStateOf<Long?>(null) }
     val filter = state.filter
+    val pickPdf = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let(onImportPdf)
+    }
 
     BackHandler(enabled = state.isSearching, onBack = viewModel::closeSearch)
     LaunchedEffect(showTagRequest) {
@@ -296,6 +305,10 @@ fun LibraryScreen(
                 showAddChoices = false
                 onImportFromWeb()
             },
+            onImportPdf = {
+                showAddChoices = false
+                pickPdf.launch(arrayOf(PDF_TYPE))
+            },
             onAddManually = {
                 showAddChoices = false
                 onAddManually()
@@ -304,10 +317,15 @@ fun LibraryScreen(
     }
 }
 
-/** Asks how to add a pattern: from a website (most patterns) or by typing it in. */
+/** Asks how to add a pattern: from a website (most patterns), a PDF, or by typing it in. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AddPatternSheet(onDismiss: () -> Unit, onImportFromWeb: () -> Unit, onAddManually: () -> Unit) {
+private fun AddPatternSheet(
+    onDismiss: () -> Unit,
+    onImportFromWeb: () -> Unit,
+    onImportPdf: () -> Unit,
+    onAddManually: () -> Unit,
+) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(Modifier.padding(bottom = 24.dp)) {
             ListItem(
@@ -316,6 +334,13 @@ private fun AddPatternSheet(onDismiss: () -> Unit, onImportFromWeb: () -> Unit, 
                 leadingContent = { Icon(painterResource(R.drawable.ic_link), contentDescription = null) },
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                 modifier = Modifier.clickable(onClick = onImportFromWeb),
+            )
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.library_add_pdf)) },
+                supportingContent = { Text(stringResource(R.string.library_add_pdf_hint)) },
+                leadingContent = { Icon(painterResource(R.drawable.ic_pdf), contentDescription = null) },
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                modifier = Modifier.clickable(onClick = onImportPdf),
             )
             ListItem(
                 headlineContent = { Text(stringResource(R.string.library_add_manually)) },

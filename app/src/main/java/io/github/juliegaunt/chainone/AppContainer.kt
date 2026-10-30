@@ -6,6 +6,8 @@ import io.github.juliegaunt.chainone.data.files.FileStore
 import io.github.juliegaunt.chainone.data.importer.ImportStaging
 import io.github.juliegaunt.chainone.data.importer.JsoupWebClient
 import io.github.juliegaunt.chainone.data.importer.PatternImporter
+import io.github.juliegaunt.chainone.data.importer.PdfImporter
+import io.github.juliegaunt.chainone.data.pdf.RendererPdfInspector
 import io.github.juliegaunt.chainone.data.repository.CounterRepository
 import io.github.juliegaunt.chainone.data.repository.PatternRepository
 import io.github.juliegaunt.chainone.data.settings.AppSettings
@@ -23,7 +25,8 @@ class AppContainer(context: Context) {
     val counterRepository = CounterRepository(database.counterDao(), database.patternDao())
     val settings = AppSettings(context)
     val importStaging = ImportStaging(File(context.cacheDir, "imports"))
-    val patternImporter = PatternImporter(JsoupWebClient(), importStaging) { host ->
+    val pdfImporter = PdfImporter(importStaging, context.contentResolver, RendererPdfInspector())
+    val patternImporter = PatternImporter(JsoupWebClient(), importStaging, pdfImporter) { host ->
         context.getString(R.string.snapshot_caption, host, DateFormat.getDateInstance(DateFormat.LONG).format(Date()))
     }
 

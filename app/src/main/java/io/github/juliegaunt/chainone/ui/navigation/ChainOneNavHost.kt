@@ -12,6 +12,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import io.github.juliegaunt.chainone.ui.edit.EditPatternScreen
 import io.github.juliegaunt.chainone.ui.importer.ImportScreen
+import io.github.juliegaunt.chainone.ui.importer.PdfImportScreen
 import io.github.juliegaunt.chainone.ui.library.LibraryScreen
 import io.github.juliegaunt.chainone.ui.pattern.PatternDetailScreen
 
@@ -20,6 +21,7 @@ object Routes {
     const val PATTERN = "pattern/{$ARG_PATTERN_ID}"
     const val EDIT = "edit?$ARG_PATTERN_ID={$ARG_PATTERN_ID}&$ARG_IMPORT_ID={$ARG_IMPORT_ID}"
     const val IMPORT = "import?$ARG_SHARED_TEXT={$ARG_SHARED_TEXT}"
+    const val IMPORT_PDF = "import-pdf?$ARG_PDF_URI={$ARG_PDF_URI}"
 
     fun pattern(id: Long) = "pattern/$id"
     fun edit(id: Long? = null) = if (id == null) "edit" else "edit?$ARG_PATTERN_ID=$id"
@@ -28,11 +30,22 @@ object Routes {
     fun review(importId: String) = "edit?$ARG_IMPORT_ID=${Uri.encode(importId)}"
     fun import(sharedText: String? = null) =
         if (sharedText == null) "import" else "import?$ARG_SHARED_TEXT=${Uri.encode(sharedText)}"
+
+    /** Copies in a PDF (picked in the file picker or shared from another app) for review. */
+    fun importPdf(uri: Uri) = "import-pdf?$ARG_PDF_URI=${Uri.encode(uri.toString())}"
 }
 
 const val ARG_PATTERN_ID = "patternId"
 const val ARG_IMPORT_ID = "importId"
 const val ARG_SHARED_TEXT = "sharedText"
+const val ARG_PDF_URI = "pdfUri"
+
+/** Something another app sent to Chain One with Share or "Open with". */
+sealed interface SharedItem {
+    /** Usually a link to a pattern page. */
+    data class Text(val text: String) : SharedItem
+    data class Pdf(val uri: Uri) : SharedItem
+}
 
 /** Set on the library's saved state to show only the patterns with this tag id. */
 const val KEY_SHOW_TAG = "showTag"
@@ -41,18 +54,20 @@ const val KEY_SHOW_TAG = "showTag"
 const val NEW_PATTERN_ID = -1L
 
 /**
- * @param sharedText text another app shared with "Share → Chain One" (usually a link),
- *   which opens the import screen; [onShareHandled] is called once it has
+ * @param shared what another app shared with "Share → Chain One" (a link or a PDF), which
+ *   opens the matching import screen; [onShareHandled] is called once it has
  */
 @Composable
-fun ChainOneNavHost(sharedText: String? = null, onShareHandled: () -> Unit = {}) {
+fun ChainOneNavHost(shared: SharedItem? = null, onShareHandled: () -> Unit = {}) {
     val navController = rememberNavController()
 
-    LaunchedEffect(sharedText) {
-        if (sharedText != null) {
-            navController.navigate(Routes.import(sharedText))
-            onShareHandled()
+    LaunchedEffect(shared) {
+        when (shared) {
+            is SharedItem.Text -> navController.navigate(Routes.import(shared.text))
+            is SharedItem.Pdf -> navController.navigate(Routes.importPdf(shared.uri))
+            null -> return@LaunchedEffect
         }
+        onShareHandled()
     }
 
     NavHost(navController = navController, startDestination = Routes.LIBRARY) {
@@ -63,6 +78,7 @@ fun ChainOneNavHost(sharedText: String? = null, onShareHandled: () -> Unit = {})
                 onOpenPattern = { navController.navigate(Routes.pattern(it)) },
                 onAddManually = { navController.navigate(Routes.edit()) },
                 onImportFromWeb = { navController.navigate(Routes.import()) },
+                onImportPdf = { navController.navigate(Routes.importPdf(it)) },
                 showTagRequest = showTag,
                 onShowTagHandled = { entry.savedStateHandle[KEY_SHOW_TAG] = null },
             )
@@ -104,6 +120,20 @@ fun ChainOneNavHost(sharedText: String? = null, onShareHandled: () -> Unit = {})
                 onOpenPattern = { id ->
                     navController.navigate(Routes.pattern(id)) {
                         popUpTo(Routes.IMPORT) { inclusive = true }
+                    }
+                },
+            )
+        }
+
+        composable(
+            Routes.IMPORT_PDF,
+            arguments = listOf(navArgument(ARG_PDF_URI) { type = NavType.StringType }),
+        ) {
+            PdfImportScreen(
+                onBack = { navController.popBackStack() },
+                onImported = { importId ->
+                    navController.navigate(Routes.review(importId)) {
+                        popUpTo(Routes.IMPORT_PDF) { inclusive = true }
                     }
                 },
             )

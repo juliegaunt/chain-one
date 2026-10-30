@@ -194,6 +194,8 @@ private val ImportProblem?.messageRes: Int
         ImportProblem.NOT_FOUND -> R.string.import_error_not_found
         ImportProblem.SERVER_ERROR -> R.string.import_error_server
         ImportProblem.IS_PDF -> R.string.import_error_pdf
+        ImportProblem.PDF_PROTECTED -> R.string.pdf_error_protected
+        ImportProblem.PDF_UNREADABLE -> R.string.pdf_error_unreadable
         ImportProblem.NOT_A_WEB_PAGE -> R.string.import_error_not_web_page
         null -> R.string.import_error_unknown
     }

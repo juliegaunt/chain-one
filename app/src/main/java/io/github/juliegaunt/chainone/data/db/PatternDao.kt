@@ -63,8 +63,26 @@ interface PatternDao {
     @Query("SELECT * FROM pattern_attachments WHERE patternId = :patternId ORDER BY addedAt")
     fun observeAttachments(patternId: Long): Flow<List<PatternAttachment>>
 
+    @Query("SELECT * FROM pattern_attachments WHERE patternId = :patternId ORDER BY addedAt")
+    suspend fun getAttachments(patternId: Long): List<PatternAttachment>
+
+    @Query("SELECT * FROM pattern_attachments WHERE id = :id")
+    suspend fun getAttachment(id: Long): PatternAttachment?
+
     @Insert
     suspend fun insertAttachment(attachment: PatternAttachment): Long
+
+    @Query("UPDATE pattern_attachments SET displayName = :name WHERE id = :id")
+    suspend fun setAttachmentName(id: Long, name: String)
+
+    @Query("UPDATE pattern_attachments SET lastPage = :page WHERE id = :id")
+    suspend fun setAttachmentLastPage(id: Long, page: Int)
+
+    @Query("UPDATE pattern_attachments SET markerPage = :page, markerTop = :top, markerHeight = :height WHERE id = :id")
+    suspend fun setAttachmentMarker(id: Long, page: Int?, top: Float?, height: Float?)
+
+    @Query("DELETE FROM pattern_attachments WHERE id = :id")
+    suspend fun deleteAttachment(id: Long)
 
     // Tags. Names compare without regard to case (the column is NOCASE), so "Baby" finds "baby".
 

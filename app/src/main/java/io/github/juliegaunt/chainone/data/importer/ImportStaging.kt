@@ -8,7 +8,7 @@ import java.io.File
 import java.io.IOException
 import java.util.UUID
 
-/** A downloaded pattern waiting on the review screen. Nothing is in the library until it's saved. */
+/** A downloaded (or picked) pattern waiting on the review screen. Nothing is in the library until it's saved. */
 data class StagedImport(
     /** Name of its folder under the staging root. */
     val id: String,
@@ -25,6 +25,10 @@ data class StagedImport(
     val coverFile: File? = null,
     /** Folder holding the saved copy of the page (`index.html` plus its photos). */
     val snapshotDir: File? = null,
+    /** Set when the import is a PDF (picked, shared, or downloaded from a link to one). */
+    val pdfFile: File? = null,
+    /** The PDF's name as shown on the pattern page, e.g. "Granny Square". */
+    val pdfName: String = "",
 )
 
 /**
@@ -56,6 +60,8 @@ class ImportStaging(
             .put("downloaded", staged.downloaded)
             .put("cover", staged.coverFile?.name ?: JSONObject.NULL)
             .put("snapshot", staged.snapshotDir?.name ?: JSONObject.NULL)
+            .put("pdf", staged.pdfFile?.name ?: JSONObject.NULL)
+            .put("pdfName", staged.pdfName)
         File(folder(staged.id), MANIFEST).writeText(json.toString())
     }
 
@@ -78,6 +84,8 @@ class ImportStaging(
                 downloaded = json.optBoolean("downloaded", true),
                 coverFile = json.optFileIn(folder, "cover"),
                 snapshotDir = json.optFileIn(folder, "snapshot"),
+                pdfFile = json.optFileIn(folder, "pdf"),
+                pdfName = json.optString("pdfName"),
             )
         } catch (e: JSONException) {
             null

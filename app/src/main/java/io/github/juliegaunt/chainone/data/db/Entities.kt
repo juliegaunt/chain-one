@@ -84,7 +84,19 @@ data class PatternAttachment(
     /** Zero-based page the viewer was last showing. */
     val lastPage: Int = 0,
     val addedAt: Long,
+    /** The row marker's page (zero-based); null when the marker is off. Added in schema v4. */
+    val markerPage: Int? = null,
+    /** Where the marker's top edge is, as a fraction of the page's height. Added in schema v4. */
+    val markerTop: Float? = null,
+    /** The marker's height, as a fraction of the page's height. Added in schema v4. */
+    val markerHeight: Float? = null,
 )
+
+/** A see-through bar laid over one row of a PDF, like a magnetic board's strip. */
+data class RowMarker(val page: Int, val top: Float, val height: Float)
+
+val PatternAttachment.rowMarker: RowMarker?
+    get() = if (markerPage != null && markerTop != null && markerHeight != null) RowMarker(markerPage, markerTop, markerHeight) else null
 
 @Entity(
     tableName = "tags",

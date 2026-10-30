@@ -39,6 +39,7 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
@@ -49,6 +50,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -70,7 +72,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.juliegaunt.chainone.R
 import io.github.juliegaunt.chainone.data.db.Counter
 import io.github.juliegaunt.chainone.data.db.Pattern
+import io.github.juliegaunt.chainone.data.db.PatternAttachment
 import io.github.juliegaunt.chainone.data.db.PatternStatus
+import io.github.juliegaunt.chainone.data.db.RowMarker
+import io.github.juliegaunt.chainone.data.db.rowMarker
 import io.github.juliegaunt.chainone.data.db.Tag
 import io.github.juliegaunt.chainone.ui.components.PatternCover
 import io.github.juliegaunt.chainone.ui.components.colors
@@ -82,11 +87,14 @@ import io.github.juliegaunt.chainone.ui.counter.CounterViewModel
 import io.github.juliegaunt.chainone.ui.counter.LocalVolumeKeys
 import java.io.File
 
+private const val MAX_FIXED_TABS = 4
+
 private enum class DetailTab(val labelRes: Int) {
     OVERVIEW(R.string.tab_overview),
     INSTRUCTIONS(R.string.tab_instructions),
     COUNTER(R.string.tab_counter),
     WEB_PAGE(R.string.tab_web_page),
+    PDF(R.string.tab_pdf),
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -103,6 +111,7 @@ fun PatternDetailScreen(
     var showMenu by rememberSaveable { mutableStateOf(false) }
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
     var selectedTab by rememberSaveable { mutableStateOf<DetailTab?>(null) }
+    var selectedPdfId by rememberSaveable { mutableStateOf<Long?>(null) }
 
     LaunchedEffect(state.isDeleted) {
         if (state.isDeleted) onBack()
@@ -170,18 +179,34 @@ fun PatternDetailScreen(
                     )
                 }
                 else -> {
-                    val tabs = DetailTab.entries.filter { it != DetailTab.WEB_PAGE || state.savedPage != null }
-                    // When the import couldn't pick out the instructions, the saved page is where they are.
-                    val defaultTab =
-                        if (pattern.instructions.isBlank() && state.savedPage != null) DetailTab.WEB_PAGE else DetailTab.OVERVIEW
+                    val tabs = DetailTab.entries.filter {
+                        when (it) {
+                            DetailTab.WEB_PAGE -> state.savedPage != null
+                            DetailTab.PDF -> state.pdfs.isNotEmpty()
+                            else -> true
+                        }
+                    }
+                    // Without typed-in instructions, the PDF or the saved page is where they are.
+                    val defaultTab = when {
+                        pattern.instructions.isNotBlank() -> DetailTab.OVERVIEW
+                        state.pdfs.isNotEmpty() -> DetailTab.PDF
+                        state.savedPage != null -> DetailTab.WEB_PAGE
+                        else -> DetailTab.OVERVIEW
+                    }
                     val currentTab = selectedTab?.takeIf { it in tabs } ?: defaultTab
-                    PrimaryTabRow(selectedTabIndex = tabs.indexOf(currentTab)) {
+                    val tabContent: @Composable () -> Unit = {
                         tabs.forEach { tab ->
                             Tab(
                                 selected = currentTab == tab,
                                 onClick = { selectedTab = tab },
                             ) { TabLabel(stringResource(tab.labelRes)) }
                         }
+                    }
+                    // Four tabs fit across a phone; with five, the row scrolls.
+                    if (tabs.size <= MAX_FIXED_TABS) {
+                        PrimaryTabRow(selectedTabIndex = tabs.indexOf(currentTab), tabs = tabContent)
+                    } else {
+                        PrimaryScrollableTabRow(selectedTabIndex = tabs.indexOf(currentTab), edgePadding = 0.dp, tabs = tabContent)
                     }
                     // A counter is on screen on these tabs: the Counter tab itself, or the bar under the others.
                     CountingEffects(
@@ -198,16 +223,24 @@ fun PatternDetailScreen(
                             onStatusChange = viewModel::setStatus,
                             onShowTag = onShowTag,
                         )
-                        DetailTab.INSTRUCTIONS, DetailTab.WEB_PAGE -> Column(Modifier.fillMaxSize()) {
-                            if (currentTab == DetailTab.INSTRUCTIONS) {
-                                InstructionsTab(
+                        DetailTab.INSTRUCTIONS, DetailTab.WEB_PAGE, DetailTab.PDF -> Column(Modifier.fillMaxSize()) {
+                            when (currentTab) {
+                                DetailTab.INSTRUCTIONS -> InstructionsTab(
                                     pattern = pattern,
                                     counter = counters.main,
                                     onRowTap = { row -> counterViewModel.jumpToRow(row.from, row.section) },
                                     modifier = Modifier.weight(1f),
                                 )
-                            } else {
-                                state.savedPage?.let { SavedPageView(it, Modifier.weight(1f)) }
+                                DetailTab.WEB_PAGE -> state.savedPage?.let { SavedPageView(it, Modifier.weight(1f)) }
+                                else -> PdfTab(
+                                    pdfs = state.pdfs,
+                                    selectedId = selectedPdfId,
+                                    onSelect = { selectedPdfId = it },
+                                    fileOf = viewModel::pdfFile,
+                                    onPageChange = viewModel::setPdfPage,
+                                    onMarkerChange = viewModel::setRowMarker,
+                                    modifier = Modifier.weight(1f),
+                                )
                             }
                             CounterBar(
                                 counter = counters.main,
@@ -363,6 +396,60 @@ private fun InstructionsTab(
                 )
             }
             InstructionsText(pattern.instructions, rows = rows, highlighted = highlighted, onRowTap = onRowTap)
+        }
+    }
+}
+
+/** The pattern's PDF; with several, a menu above it switches between them. */
+@Composable
+private fun PdfTab(
+    pdfs: List<PatternAttachment>,
+    selectedId: Long?,
+    onSelect: (Long) -> Unit,
+    fileOf: (PatternAttachment) -> File,
+    onPageChange: (pdfId: Long, page: Int) -> Unit,
+    onMarkerChange: (pdfId: Long, RowMarker?) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val pdf = pdfs.firstOrNull { it.id == selectedId } ?: pdfs.first()
+    Column(modifier.fillMaxWidth()) {
+        if (pdfs.size > 1) {
+            var expanded by remember { mutableStateOf(false) }
+            Box(Modifier.padding(horizontal = 8.dp)) {
+                TextButton(onClick = { expanded = true }) {
+                    Text(pdf.displayName, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                    Icon(Icons.Filled.ArrowDropDown, contentDescription = stringResource(R.string.pdf_choose))
+                }
+                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                    pdfs.forEach { option ->
+                        DropdownMenuItem(
+                            text = { Text(option.displayName) },
+                            trailingIcon = if (option.id == pdf.id) {
+                                { Icon(Icons.Filled.Check, contentDescription = null) }
+                            } else {
+                                null
+                            },
+                            onClick = {
+                                expanded = false
+                                onSelect(option.id)
+                            },
+                        )
+                    }
+                }
+            }
+        }
+        // Keyed so switching PDFs starts the viewer afresh on that PDF's own page and marker.
+        key(pdf.id) {
+            PdfViewer(
+                file = fileOf(pdf),
+                initialPage = pdf.lastPage,
+                initialMarker = pdf.rowMarker,
+                onPageChange = { onPageChange(pdf.id, it) },
+                onMarkerChange = { onMarkerChange(pdf.id, it) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+            )
         }
     }
 }

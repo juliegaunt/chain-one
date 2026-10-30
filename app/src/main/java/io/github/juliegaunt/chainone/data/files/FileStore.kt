@@ -2,6 +2,7 @@ package io.github.juliegaunt.chainone.data.files
 
 import android.content.ContentResolver
 import android.net.Uri
+import android.provider.OpenableColumns
 import android.webkit.MimeTypeMap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -36,8 +37,7 @@ class FileStore(
     }
 
     /** Copies a file the user picked (a content:// URI) into the pattern's folder. */
-    suspend fun importToPattern(patternId: Long, uri: Uri, baseName: String): String {
-        val extension = extensionFor(uri)
+    suspend fun importToPattern(patternId: Long, uri: Uri, baseName: String, extension: String = extensionFor(uri)): String {
         return withContext(Dispatchers.IO) {
             contentResolver.openInputStream(uri)?.use { input ->
                 saveToPattern(patternId, input, baseName, extension)
@@ -91,8 +91,22 @@ class FileStore(
             ?: uri.lastPathSegment?.substringAfterLast('.', "")?.takeIf { it.length in 1..5 }
             ?: "bin"
 
+    /** The name a picked file goes by, such as "Granny Square.pdf", if the app it came from says. */
+    suspend fun displayName(uri: Uri): String? = withContext(Dispatchers.IO) { contentResolver.displayName(uri) }
+
     companion object {
         const val PATTERNS_DIR = "patterns"
         private const val SNAPSHOT_DIR = "snapshot"
     }
 }
+
+fun ContentResolver.displayName(uri: Uri): String? =
+    try {
+        query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst()) cursor.getString(0)?.takeIf { it.isNotBlank() } else null
+        }
+    } catch (e: SecurityException) {
+        null
+    } catch (e: IllegalArgumentException) {
+        null
+    } ?: uri.lastPathSegment?.substringAfterLast('/')?.takeIf { it.isNotBlank() }

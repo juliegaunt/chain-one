@@ -8,7 +8,9 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.juliegaunt.chainone.appContainer
 import io.github.juliegaunt.chainone.data.db.Pattern
+import io.github.juliegaunt.chainone.data.db.PatternAttachment
 import io.github.juliegaunt.chainone.data.db.PatternStatus
+import io.github.juliegaunt.chainone.data.db.RowMarker
 import io.github.juliegaunt.chainone.data.db.Tag
 import io.github.juliegaunt.chainone.data.files.FileStore
 import io.github.juliegaunt.chainone.data.repository.PatternRepository
@@ -28,6 +30,7 @@ data class PatternDetailUiState(
     val tags: List<Tag> = emptyList(),
     /** The saved copy of the pattern's web page, if it was imported from one. */
     val savedPage: File? = null,
+    val pdfs: List<PatternAttachment> = emptyList(),
     val isLoading: Boolean = true,
     /** Set once the pattern has been deleted, so the screen can close itself. */
     val isDeleted: Boolean = false,
@@ -45,13 +48,15 @@ class PatternDetailViewModel(
     val uiState: StateFlow<PatternDetailUiState> = combine(
         repository.observePattern(patternId),
         repository.observeTagsFor(patternId),
+        repository.observeAttachments(patternId),
         isDeleted,
-    ) { pattern, tags, deleted ->
+    ) { pattern, tags, pdfs, deleted ->
         PatternDetailUiState(
             pattern = pattern,
             cover = fileStore.coverFile(pattern?.coverImagePath),
             tags = tags,
             savedPage = pattern?.snapshotPath?.let(fileStore::resolve),
+            pdfs = pdfs,
             isLoading = false,
             isDeleted = deleted,
         )
@@ -68,6 +73,16 @@ class PatternDetailViewModel(
 
     fun setStatus(status: PatternStatus) {
         viewModelScope.launch { repository.setStatus(patternId, status) }
+    }
+
+    fun pdfFile(pdf: PatternAttachment): File = fileStore.resolve(pdf.filePath)
+
+    fun setPdfPage(pdfId: Long, page: Int) {
+        viewModelScope.launch { repository.setPdfPage(pdfId, page) }
+    }
+
+    fun setRowMarker(pdfId: Long, marker: RowMarker?) {
+        viewModelScope.launch { repository.setRowMarker(pdfId, marker) }
     }
 
     fun delete() {

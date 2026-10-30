@@ -6,6 +6,7 @@ import androidx.sqlite.db.SupportSQLiteOpenHelper
 import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 import androidx.test.core.app.ApplicationProvider
 import io.github.juliegaunt.chainone.data.db.ChainOneDatabase
+import io.github.juliegaunt.chainone.data.db.rowMarker
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.json.JSONObject
@@ -55,6 +56,7 @@ class MigrationTest {
             execSQL("INSERT INTO patterns (id, title, designer, sourceType, hookSize, yarnWeight, materials, instructions, notes, status, isFavorite, createdAt, updatedAt) VALUES (1, 'Blanket', '', 'MANUAL', '', '', '', '', '', 'IN_PROGRESS', 1, 1, 1)")
             execSQL("INSERT INTO counters (id, patternId, name, value, position, updatedAt) VALUES (1, 1, 'Row', 12, 0, 1)")
             execSQL("INSERT INTO counter_history (counterId, previousValue, createdAt) VALUES (1, 11, 1)")
+            execSQL("INSERT INTO pattern_attachments (id, patternId, filePath, displayName, lastPage, addedAt) VALUES (1, 1, 'patterns/1/pdf-1.pdf', 'Blanket', 4, 1)")
             close()
         }
     }
@@ -76,6 +78,11 @@ class MigrationTest {
             assertNull(counter.repeatTimes)
             assertNull(counter.rowSection)
             assertEquals(11, db.counterDao().latestHistory(1)!!.previousValue)
+
+            val pdf = db.patternDao().getAttachment(1)!!
+            assertEquals("Blanket", pdf.displayName)
+            assertEquals(4, pdf.lastPage)
+            assertNull(pdf.rowMarker)
         } finally {
             db.close()
             context.deleteDatabase(name)

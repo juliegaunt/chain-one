@@ -1,6 +1,8 @@
 package io.github.juliegaunt.chainone
 
+import android.content.ContentResolver
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.KeyEvent
 import androidx.activity.ComponentActivity
@@ -10,15 +12,17 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.core.content.IntentCompat
 import io.github.juliegaunt.chainone.ui.counter.LocalVolumeKeys
 import io.github.juliegaunt.chainone.ui.counter.VolumeKeys
 import io.github.juliegaunt.chainone.ui.navigation.ChainOneNavHost
+import io.github.juliegaunt.chainone.ui.navigation.SharedItem
 import io.github.juliegaunt.chainone.ui.theme.ChainOneTheme
 
 class MainActivity : ComponentActivity() {
 
-    /** A link shared with "Share → Chain One" that hasn't been opened on the import screen yet. */
-    private var pendingShare by mutableStateOf<String?>(null)
+    /** A link or PDF shared with "Share → Chain One" that hasn't been opened on an import screen yet. */
+    private var pendingShare by mutableStateOf<SharedItem?>(null)
 
     private val volumeKeys = VolumeKeys()
 
@@ -26,11 +30,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         // Only on first launch: after a rotation the import screen is already showing.
-        if (savedInstanceState == null) pendingShare = sharedText(intent)
+        if (savedInstanceState == null) pendingShare = sharedItem(intent)
         setContent {
             CompositionLocalProvider(LocalVolumeKeys provides volumeKeys) {
                 ChainOneTheme {
-                    ChainOneNavHost(sharedText = pendingShare, onShareHandled = { pendingShare = null })
+                    ChainOneNavHost(shared = pendingShare, onShareHandled = { pendingShare = null })
                 }
             }
         }
@@ -40,7 +44,7 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        sharedText(intent)?.let { pendingShare = it }
+        sharedItem(intent)?.let { pendingShare = it }
     }
 
     /**
@@ -60,6 +64,18 @@ class MainActivity : ComponentActivity() {
 
     private fun isVolumeKey(keyCode: Int) = keyCode == KeyEvent.KEYCODE_VOLUME_UP || keyCode == KeyEvent.KEYCODE_VOLUME_DOWN
 
-    private fun sharedText(intent: Intent?): String? =
-        if (intent?.action == Intent.ACTION_SEND) intent.getStringExtra(Intent.EXTRA_TEXT) else null
+    /** A link from Share, or a PDF from Share or "Open with". */
+    private fun sharedItem(intent: Intent?): SharedItem? = when (intent?.action) {
+        Intent.ACTION_SEND -> if (intent.type == PDF_TYPE) {
+            IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)?.let(SharedItem::Pdf)
+        } else {
+            intent.getStringExtra(Intent.EXTRA_TEXT)?.let(SharedItem::Text)
+        }
+        Intent.ACTION_VIEW -> intent.data?.takeIf { it.scheme == ContentResolver.SCHEME_CONTENT }?.let(SharedItem::Pdf)
+        else -> null
+    }
+
+    private companion object {
+        const val PDF_TYPE = "application/pdf"
+    }
 }

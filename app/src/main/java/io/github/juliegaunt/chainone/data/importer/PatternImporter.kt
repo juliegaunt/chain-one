@@ -1,5 +1,7 @@
 package io.github.juliegaunt.chainone.data.importer
 
+import io.github.juliegaunt.chainone.data.pdf.PdfOpenException
+import io.github.juliegaunt.chainone.data.pdf.PdfProblem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
@@ -21,17 +23,23 @@ import java.io.File
 class PatternImporter(
     private val web: WebClient,
     private val staging: ImportStaging,
+    private val pdfs: PdfImporter,
     private val caption: (host: String) -> String,
 ) {
 
     /**
      * [url] should already be cleaned with [UrlTools.clean]. Throws [ImportException] on failure.
      * The staged source link is the page's final address, after any redirects (short links
-     * such as pin.it lead to the real page).
+     * such as pin.it lead to the real page). A link to a PDF stages the PDF instead.
      */
     suspend fun import(url: String): StagedImport {
         staging.discardStale()
-        val document = web.fetchPage(UrlTools.forFetching(url))
+        val document = try {
+            web.fetchPage(UrlTools.forFetching(url))
+        } catch (e: ImportException) {
+            if (e.problem == ImportProblem.IS_PDF) return importPdf(url)
+            throw e
+        }
         val pageUrl = UrlTools.clean(document.location()) ?: url
         val parsed = withContext(Dispatchers.Default) { PatternParser.parse(document) }
 
@@ -58,6 +66,19 @@ class PatternImporter(
             // Includes cancellation (the person backed out): leave nothing behind.
             withContext(Dispatchers.IO + NonCancellable) { folder.deleteRecursively() }
             throw e
+        }
+    }
+
+    private suspend fun importPdf(url: String): StagedImport {
+        val download = web.download(UrlTools.forFetching(url), MAX_PDF_BYTES)
+            ?: throw ImportException(ImportProblem.IS_PDF)
+        return try {
+            pdfs.stage(PdfNames.fromUrl(url), sourceUrl = url) { download.bytes.inputStream() }
+        } catch (e: PdfOpenException) {
+            throw ImportException(
+                if (e.problem == PdfProblem.PROTECTED) ImportProblem.PDF_PROTECTED else ImportProblem.PDF_UNREADABLE,
+                e,
+            )
         }
     }
 
@@ -133,5 +154,6 @@ class PatternImporter(
         private const val MAX_IMAGES = 40
         private const val MAX_IMAGE_BYTES = 8 * 1024 * 1024
         private const val PARALLEL_DOWNLOADS = 4
+        private const val MAX_PDF_BYTES = 50 * 1024 * 1024
     }
 }

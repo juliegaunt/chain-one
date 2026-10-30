@@ -14,6 +14,7 @@ import io.github.juliegaunt.chainone.data.db.PatternStatus
 import io.github.juliegaunt.chainone.data.db.SourceType
 import io.github.juliegaunt.chainone.data.files.FileStore
 import io.github.juliegaunt.chainone.data.importer.ImportStaging
+import io.github.juliegaunt.chainone.data.importer.PdfNames
 import io.github.juliegaunt.chainone.data.importer.StagedImport
 import io.github.juliegaunt.chainone.data.importer.UrlTools
 import io.github.juliegaunt.chainone.data.repository.PatternDraft
@@ -81,13 +82,24 @@ data class PatternForm(
     }
 }
 
-/** What the review banner says about a pattern imported from a website. */
+/** What the review banner says about a pattern imported from a website or a PDF. */
 data class ImportReview(
     val host: String,
     /** String resources of the fields the page didn't provide. */
     val missingFields: List<Int>,
     val foundInstructions: Boolean,
     val hasPageCopy: Boolean,
+    /** Set when the import is a PDF, which Chain One can't read the details out of. */
+    val pdfName: String? = null,
+)
+
+/** A PDF in the edit screen's list: already saved, waiting in an import, or just picked. */
+data class PdfEntry(
+    val key: String,
+    val name: String,
+    val savedId: Long? = null,
+    val stagedFile: File? = null,
+    val pickedUri: Uri? = null,
 )
 
 data class EditPatternUiState(
@@ -103,10 +115,14 @@ data class EditPatternUiState(
     /** A photo picked on this screen but not saved yet. */
     val pickedCover: Uri? = null,
     val removeCover: Boolean = false,
+    val pdfs: List<PdfEntry> = emptyList(),
+    /** The PDFs as they were when the screen opened (or last saved). */
+    val initialPdfs: List<PdfEntry> = emptyList(),
     val showTitleError: Boolean = false,
     val isSaving: Boolean = false,
     val coverCopyFailed: Boolean = false,
     val importFilesFailed: Boolean = false,
+    val pdfCopyFailed: Boolean = false,
     /** Text typed in the Tags box that hasn't been turned into a tag yet. */
     val tagInput: String = "",
     /** Every tag in the library, to suggest while typing. */
@@ -116,7 +132,8 @@ data class EditPatternUiState(
 ) {
     val coverModel: Any? get() = pickedCover ?: savedCover.takeUnless { removeCover }
 
-    val hasChanges: Boolean get() = form != initialForm || pickedCover != null || removeCover || tagInput.isNotBlank()
+    val hasChanges: Boolean
+        get() = form != initialForm || pickedCover != null || removeCover || pdfs != initialPdfs || tagInput.isNotBlank()
 
     /** Existing tags matching what's typed (or, before typing, any), leaving out ones already added. */
     val tagSuggestions: List<String>
@@ -145,6 +162,7 @@ class EditPatternViewModel(
     private val isNew = patternId == NEW_PATTERN_ID
     private var staged: StagedImport? = null
     private var importAttached = false
+    private var nextPdfKey = 0
 
     /** Null until a new pattern has been inserted, so a retry after a failed photo copy updates it. */
     private var storedId: Long? = patternId.takeUnless { isNew }
@@ -161,6 +179,7 @@ class EditPatternViewModel(
                 val loaded = staging.load(importId)
                 staged = loaded
                 val form = loaded?.let(PatternForm::from) ?: PatternForm()
+                val pdf = loaded?.pdfFile?.let { PdfEntry(key = "staged", name = loaded.pdfName, stagedFile = it) }
                 _uiState.update {
                     it.copy(
                         isLoading = false,
@@ -168,6 +187,7 @@ class EditPatternViewModel(
                         // Compared with a blank form, so leaving without saving asks first.
                         initialForm = PatternForm(),
                         savedCover = loaded?.coverFile,
+                        pdfs = listOfNotNull(pdf),
                         review = loaded?.takeIf { it.downloaded }?.let(::reviewOf),
                     )
                 }
@@ -176,12 +196,15 @@ class EditPatternViewModel(
             viewModelScope.launch {
                 val pattern = repository.getPattern(patternId)
                 val form = pattern?.let { PatternForm.from(it).copy(tags = repository.getTagNames(it.id)) } ?: PatternForm()
+                val pdfs = repository.getPdfs(patternId).map { PdfEntry(key = "saved-${it.id}", name = it.displayName, savedId = it.id) }
                 _uiState.update {
                     it.copy(
                         isLoading = false,
                         form = form,
                         initialForm = form,
                         savedCover = fileStore.coverFile(pattern?.coverImagePath),
+                        pdfs = pdfs,
+                        initialPdfs = pdfs,
                     )
                 }
             }
@@ -230,6 +253,26 @@ class EditPatternViewModel(
         _uiState.update { it.copy(pickedCover = null, removeCover = it.savedCover != null) }
     }
 
+    /** Adds a PDF picked on this screen; it's copied in when the pattern is saved. */
+    fun addPdf(uri: Uri) {
+        viewModelScope.launch {
+            val name = PdfNames.displayName(fileStore.displayName(uri) ?: PdfNames.DEFAULT_FILE_NAME)
+            _uiState.update {
+                it.copy(pdfs = it.pdfs + PdfEntry(key = "picked-${nextPdfKey++}", name = name, pickedUri = uri), pdfCopyFailed = false)
+            }
+        }
+    }
+
+    fun renamePdf(key: String, name: String) {
+        val clean = name.trim()
+        if (clean.isEmpty()) return
+        _uiState.update { state -> state.copy(pdfs = state.pdfs.map { if (it.key == key) it.copy(name = clean) else it }) }
+    }
+
+    fun removePdf(key: String) {
+        _uiState.update { state -> state.copy(pdfs = state.pdfs.filterNot { it.key == key }) }
+    }
+
     fun save() {
         // A tag still in the box when Save is pressed counts too.
         if (_uiState.value.tagInput.isNotBlank()) addTag(_uiState.value.tagInput)
@@ -243,7 +286,11 @@ class EditPatternViewModel(
 
         viewModelScope.launch {
             val staged = this@EditPatternViewModel.staged
-            val sourceType = if (staged?.downloaded == true) SourceType.URL else SourceType.MANUAL
+            val sourceType = when {
+                staged?.pdfFile != null -> SourceType.PDF
+                staged?.downloaded == true -> SourceType.URL
+                else -> SourceType.MANUAL
+            }
             val id = storedId
                 ?.also { repository.update(it, state.form.toDraft()) }
                 ?: repository.create(state.form.toDraft(), sourceType).also { storedId = it }
@@ -257,6 +304,8 @@ class EditPatternViewModel(
                     filesFailed = true
                 }
             }
+
+            val pdfsFailed = !savePdfs(id)
 
             var coverFailed = false
             try {
@@ -278,11 +327,49 @@ class EditPatternViewModel(
                 } else if (filesFailed) {
                     // The text is saved; Save again retries moving the files.
                     it.copy(isSaving = false, importFilesFailed = true, initialForm = it.form)
+                } else if (pdfsFailed) {
+                    // The PDFs that couldn't be copied stay in the list; Save again retries them.
+                    it.copy(isSaving = false, pdfCopyFailed = true, initialForm = it.form)
                 } else {
                     it.copy(isSaving = false, savedId = id)
                 }
             }
         }
+    }
+
+    /**
+     * Applies the PDF list: removes, renames and copies in. Each PDF that's done is marked as
+     * saved, so a retry after a failure doesn't add it twice. Returns false if any failed.
+     */
+    private suspend fun savePdfs(id: Long): Boolean {
+        val state = _uiState.value
+        val keptIds = state.pdfs.mapNotNull { it.savedId }.toSet()
+        state.initialPdfs.mapNotNull { it.savedId }.filter { it !in keptIds }.forEach { repository.removePdf(it) }
+        val initialNames = state.initialPdfs.associate { it.key to it.name }
+
+        var allSaved = true
+        val saved = state.pdfs.map { entry ->
+            try {
+                when {
+                    entry.savedId != null -> {
+                        if (initialNames[entry.key] != entry.name) repository.renamePdf(entry.savedId, entry.name)
+                        entry
+                    }
+                    entry.stagedFile != null -> entry.copy(savedId = repository.adoptPdf(id, entry.stagedFile, entry.name), stagedFile = null)
+                    entry.pickedUri != null -> entry.copy(savedId = repository.addPdf(id, entry.pickedUri, entry.name), pickedUri = null)
+                    else -> entry
+                }
+            } catch (e: IOException) {
+                allSaved = false
+                entry
+            } catch (e: SecurityException) {
+                // The file picker's permission can lapse if the app was restarted in between.
+                allSaved = false
+                entry
+            }
+        }
+        _uiState.update { it.copy(pdfs = saved, initialPdfs = saved.filter { entry -> entry.savedId != null }) }
+        return allSaved
     }
 
     override fun onCleared() {
@@ -291,7 +378,19 @@ class EditPatternViewModel(
         importId?.let { id -> appScope.launch { staging.discard(id) } }
     }
 
-    private fun reviewOf(staged: StagedImport) = ImportReview(
+    private fun reviewOf(staged: StagedImport) = if (staged.pdfFile != null) {
+        ImportReview(
+            host = staged.sourceUrl.takeIf { it.isNotBlank() }?.let(UrlTools::host).orEmpty(),
+            missingFields = emptyList(),
+            foundInstructions = false,
+            hasPageCopy = false,
+            pdfName = staged.pdfName,
+        )
+    } else {
+        webReviewOf(staged)
+    }
+
+    private fun webReviewOf(staged: StagedImport) = ImportReview(
         host = UrlTools.host(staged.sourceUrl),
         missingFields = listOfNotNull(
             R.string.field_designer.takeIf { staged.designer.isBlank() },

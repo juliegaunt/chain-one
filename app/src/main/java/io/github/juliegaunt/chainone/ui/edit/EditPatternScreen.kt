@@ -35,6 +35,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.InputChip
 import androidx.compose.material3.InputChipDefaults
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -54,10 +56,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -78,12 +87,16 @@ fun EditPatternScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val coverFailedMessage = stringResource(R.string.edit_cover_failed)
     val filesFailedMessage = stringResource(R.string.edit_files_failed)
+    val pdfFailedMessage = stringResource(R.string.edit_pdf_failed)
 
     val pickPhoto = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         uri?.let(viewModel::pickCover)
     }
     val launchPicker = {
         pickPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+    }
+    val pickPdf = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let(viewModel::addPdf)
     }
 
     LaunchedEffect(state.savedId) {
@@ -94,6 +107,9 @@ fun EditPatternScreen(
     }
     LaunchedEffect(state.importFilesFailed) {
         if (state.importFilesFailed) snackbarHostState.showSnackbar(filesFailedMessage)
+    }
+    LaunchedEffect(state.pdfCopyFailed) {
+        if (state.pdfCopyFailed) snackbarHostState.showSnackbar(pdfFailedMessage)
     }
 
     val tryClose = { if (state.hasChanges) confirmDiscard = true else onBack() }
@@ -130,6 +146,9 @@ fun EditPatternScreen(
                 onRemoveTag = viewModel::removeTag,
                 onPickCover = launchPicker,
                 onRemoveCover = viewModel::removeCover,
+                onAddPdf = { pickPdf.launch(arrayOf("application/pdf")) },
+                onRenamePdf = viewModel::renamePdf,
+                onRemovePdf = viewModel::removePdf,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
@@ -167,6 +186,9 @@ private fun EditForm(
     onRemoveTag: (String) -> Unit,
     onPickCover: () -> Unit,
     onRemoveCover: () -> Unit,
+    onAddPdf: () -> Unit,
+    onRenamePdf: (key: String, name: String) -> Unit,
+    onRemovePdf: (key: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val form = state.form
@@ -188,6 +210,7 @@ private fun EditForm(
             modifier = Modifier.fillMaxWidth(),
         )
         CoverPicker(model = state.coverModel, onPick = onPickCover, onRemove = onRemoveCover)
+        PdfList(pdfs = state.pdfs, onAdd = onAddPdf, onRename = onRenamePdf, onRemove = onRemovePdf)
 
         OutlinedTextField(
             value = form.title,
@@ -321,6 +344,79 @@ private fun CoverPicker(model: Any?, onPick: () -> Unit, onRemove: () -> Unit) {
     }
 }
 
+/**
+ * The pattern's PDFs. Tapping one renames it; the cross takes it off the pattern. Nothing is
+ * copied or deleted until Save.
+ */
+@Composable
+private fun PdfList(
+    pdfs: List<PdfEntry>,
+    onAdd: () -> Unit,
+    onRename: (key: String, name: String) -> Unit,
+    onRemove: (key: String) -> Unit,
+) {
+    var renaming by rememberSaveable { mutableStateOf<String?>(null) }
+    Column {
+        if (pdfs.isNotEmpty()) {
+            Text(stringResource(R.string.edit_pdfs), style = MaterialTheme.typography.labelLarge)
+        }
+        pdfs.forEach { pdf ->
+            ListItem(
+                headlineContent = { Text(pdf.name, maxLines = 2, overflow = TextOverflow.Ellipsis) },
+                leadingContent = { Icon(painterResource(R.drawable.ic_pdf), contentDescription = null) },
+                trailingContent = {
+                    IconButton(onClick = { onRemove(pdf.key) }) {
+                        Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.edit_remove_pdf, pdf.name))
+                    }
+                },
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                modifier = Modifier.clickable(onClickLabel = stringResource(R.string.action_rename)) { renaming = pdf.key },
+            )
+        }
+        TextButton(onClick = onAdd) {
+            Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+            Text(stringResource(R.string.edit_add_pdf), modifier = Modifier.padding(start = 8.dp))
+        }
+    }
+
+    val pdf = pdfs.firstOrNull { it.key == renaming }
+    if (pdf != null) {
+        // Starts with the whole name selected, so typing replaces it.
+        var name by rememberSaveable(pdf.key, stateSaver = TextFieldValue.Saver) {
+            mutableStateOf(TextFieldValue(pdf.name, TextRange(0, pdf.name.length)))
+        }
+        val focus = remember { FocusRequester() }
+        LaunchedEffect(pdf.key) { focus.requestFocus() }
+        AlertDialog(
+            onDismissRequest = { renaming = null },
+            title = { Text(stringResource(R.string.edit_rename_pdf)) },
+            text = {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(focus),
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = name.text.isNotBlank(),
+                    onClick = {
+                        onRename(pdf.key, name.text)
+                        renaming = null
+                    },
+                ) { Text(stringResource(R.string.action_done)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { renaming = null }) { Text(stringResource(R.string.action_cancel)) }
+            },
+        )
+    }
+}
+
 /** Tells the person what was imported and what's missing, so they know what to check. */
 @Composable
 private fun ImportReviewCard(review: ImportReview) {
@@ -333,6 +429,10 @@ private fun ImportReviewCard(review: ImportReview) {
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(stringResource(R.string.review_heading), style = MaterialTheme.typography.titleMedium)
+            if (review.pdfName != null) {
+                Text(stringResource(R.string.review_pdf_intro), style = MaterialTheme.typography.bodyMedium)
+                return@Column
+            }
             Text(stringResource(R.string.review_intro, review.host), style = MaterialTheme.typography.bodyMedium)
             if (review.missingFields.isNotEmpty()) {
                 val fields = review.missingFields.map { stringResource(it).lowercase() }

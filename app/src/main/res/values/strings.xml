@@ -41,6 +41,8 @@
     <string name="library_add_pattern">Add pattern</string>
     <string name="library_add_from_web">From a website</string>
     <string name="library_add_from_web_hint">Paste a link and Chain One fills in the details</string>
+    <string name="library_add_pdf">From a PDF</string>
+    <string name="library_add_pdf_hint">A pattern you bought or downloaded</string>
     <string name="library_add_manually">Type it in</string>
     <string name="library_add_manually_hint">Start with a blank pattern</string>
     <string name="library_favorites_only">Show favorites only</string>
@@ -81,6 +83,7 @@
     <string name="tab_overview">Overview</string>
     <string name="tab_instructions">Instructions</string>
     <string name="tab_web_page">Web page</string>
+    <string name="tab_pdf">PDF</string>
     <string name="pattern_by_designer">by %1$s</string>
     <string name="pattern_change_status">Change status</string>
     <string name="pattern_not_found">This pattern no longer exists.</string>
@@ -107,12 +110,18 @@
     <string name="edit_discard_title">Discard your changes?</string>
     <string name="edit_discard_import_title">Discard this import?</string>
     <string name="edit_files_failed">Saved, but the photo or page copy couldn’t be stored.</string>
+    <string name="edit_pdfs">PDF files</string>
+    <string name="edit_add_pdf">Add a PDF</string>
+    <string name="edit_remove_pdf">Remove %1$s</string>
+    <string name="edit_rename_pdf">Rename PDF</string>
+    <string name="edit_pdf_failed">Saved, but a PDF couldn’t be copied. Tap Save to try again, or remove it and pick it again.</string>
 
     <!-- Review an import -->
     <string name="review_heading">Check the details</string>
     <string name="review_intro">Imported from %1$s. Fix anything that looks wrong, then tap Save.</string>
     <string name="review_missing">Not found on the page: %1$s.</string>
     <string name="review_no_instructions">Couldn’t pick out the instructions. The whole page is saved with the pattern, on its Web page tab.</string>
+    <string name="review_pdf_intro">Chain One can’t read the details inside a PDF, so the title comes from the file name. Fill in anything you’d like to see and search by, then tap Save. The PDF itself is on the pattern’s PDF tab.</string>
     <string name="review_page_saved">A copy of the web page is saved too, on the pattern’s Web page tab.</string>
     <!-- Quoted so Android keeps the space after the comma. -->
     <string name="review_list_separator">", "</string>
@@ -136,7 +145,7 @@
     <string name="import_error_blocked">This website didn’t allow the download. You can still save the link and fill in the pattern yourself.</string>
     <string name="import_error_not_found">The website says this page doesn’t exist. Check the link.</string>
     <string name="import_error_server">The website had a problem. Try again later.</string>
-    <string name="import_error_pdf">This link is a PDF, not a web page. PDF import is coming in a later version.</string>
+    <string name="import_error_pdf">This link is a PDF, and it couldn’t be downloaded. Download it in your browser, then add it with Add pattern → From a PDF.</string>
     <string name="import_error_not_web_page">This link isn’t a web page.</string>
     <string name="import_error_unknown">Something went wrong while importing. Try again.</string>
     <string name="import_url_placeholder">https://…</string>
@@ -180,6 +189,22 @@
     <string name="counter_volume_keys_hint">Volume up adds one to the first counter and volume down takes one away, while a counter is showing.</string>
     <string name="counter_keep_screen_on">Keep screen on</string>
     <string name="counter_keep_screen_on_hint">While a counter is showing, so the phone doesn’t lock mid-row.</string>
+
+    <!-- PDFs -->
+    <string name="pdf_import_title">Import a PDF</string>
+    <string name="pdf_import_loading">Copying the PDF…</string>
+    <string name="pdf_error_protected">This PDF is password-protected, so Chain One can’t show it.</string>
+    <string name="pdf_error_unreadable">This file couldn’t be opened. It may be damaged, or not really a PDF.</string>
+    <string name="pdf_error_copy">Couldn’t read the file. Try picking it again.</string>
+    <string name="pdf_choose">Choose a PDF</string>
+    <string name="pdf_page_of">%1$d / %2$d</string>
+    <string name="pdf_page_description">Page %1$d of %2$d</string>
+    <string name="pdf_marker_show">Show row marker</string>
+    <string name="pdf_marker_hide">Hide row marker</string>
+    <string name="pdf_marker_hint">Drag the bar onto the row you’re on, and its bottom tab to resize it. Long-press a row to move it there.</string>
+    <string name="pdf_marker_description">Row marker</string>
+    <string name="pdf_marker_up">Move marker up a row</string>
+    <string name="pdf_marker_down">Move marker down a row</string>
 
     <!-- Saved copy of a web page -->
     <string name="snapshot_caption">Saved from %1$s on %2$s</string>

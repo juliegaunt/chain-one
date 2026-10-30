@@ -20,7 +20,10 @@ enum class ImportProblem {
     BLOCKED,
     NOT_FOUND,
     SERVER_ERROR,
+    /** The link is a PDF that couldn't be downloaded (links to PDFs are otherwise imported as PDFs). */
     IS_PDF,
+    PDF_PROTECTED,
+    PDF_UNREADABLE,
     NOT_A_WEB_PAGE,
 }
 

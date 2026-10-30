@@ -1,5 +1,8 @@
 package io.github.juliegaunt.chainone.data.importer
 
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
+import io.github.juliegaunt.chainone.data.pdf.PdfProblem
 import kotlinx.coroutines.test.runTest
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
@@ -39,6 +42,9 @@ class PatternImporterTest {
     }
 
     private val web = FakeWebClient()
+
+    /** What the fake PDF check says about every PDF. */
+    private var pdfProblem: PdfProblem? = null
     private lateinit var stagingRoot: File
     private lateinit var staging: ImportStaging
     private lateinit var importer: PatternImporter
@@ -47,7 +53,9 @@ class PatternImporterTest {
     fun setUp() {
         stagingRoot = tempFolder.newFolder("imports")
         staging = ImportStaging(stagingRoot)
-        importer = PatternImporter(web, staging) { host -> "Saved from $host" }
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val pdfs = PdfImporter(staging, context.contentResolver) { _, cover -> cover.writeText("page 1"); pdfProblem }
+        importer = PatternImporter(web, staging, pdfs) { host -> "Saved from $host" }
     }
 
     private fun jpeg(text: String) = Download(text.toByteArray(), "image/jpeg")
@@ -98,6 +106,39 @@ class PatternImporterTest {
             assertEquals(ImportProblem.BLOCKED, e.problem)
         }
         assertTrue(stagingRoot.listFiles().isNullOrEmpty())
+    }
+
+    @Test
+    fun linkToAPdfStagesThePdfAndKeepsTheLink() = runTest {
+        web.failWith = ImportProblem.IS_PDF
+        web.files["https://example.com/files/Sunny_Tote.pdf"] = Download("%PDF tote".toByteArray(), "application/pdf")
+
+        val staged = importer.import("https://example.com/files/Sunny_Tote.pdf")
+
+        assertEquals("https://example.com/files/Sunny_Tote.pdf", staged.sourceUrl)
+        assertEquals("Sunny Tote", staged.title)
+        assertEquals("%PDF tote", staged.pdfFile!!.readText())
+        assertEquals("page 1", staged.coverFile!!.readText())
+    }
+
+    @Test
+    fun pdfLinkThatCannotBeDownloadedOrShownSaysWhy() = runTest {
+        web.failWith = ImportProblem.IS_PDF
+        assertImportFails(ImportProblem.IS_PDF, "https://example.com/missing.pdf")
+
+        web.files["https://example.com/locked.pdf"] = Download("%PDF".toByteArray(), "application/pdf")
+        pdfProblem = PdfProblem.PROTECTED
+        assertImportFails(ImportProblem.PDF_PROTECTED, "https://example.com/locked.pdf")
+        assertTrue(stagingRoot.listFiles().isNullOrEmpty())
+    }
+
+    private suspend fun assertImportFails(expected: ImportProblem, url: String) {
+        try {
+            importer.import(url)
+            fail("expected ImportException")
+        } catch (e: ImportException) {
+            assertEquals(expected, e.problem)
+        }
     }
 
     @Test

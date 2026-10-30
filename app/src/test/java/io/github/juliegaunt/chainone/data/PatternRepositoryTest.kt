@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import io.github.juliegaunt.chainone.data.db.ChainOneDatabase
+import io.github.juliegaunt.chainone.data.db.RowMarker
+import io.github.juliegaunt.chainone.data.db.rowMarker
 import io.github.juliegaunt.chainone.data.files.FileStore
 import io.github.juliegaunt.chainone.data.importer.StagedImport
 import io.github.juliegaunt.chainone.data.repository.PatternDraft
@@ -148,6 +150,81 @@ class PatternRepositoryTest {
             File(this, "image-1.jpg").writeText("img")
         }
         return StagedImport(id = "staged", sourceUrl = "https://example.com/tote", coverFile = cover, snapshotDir = snapshot)
+    }
+
+    @Test
+    fun adoptPdfMovesTheFileInAndListsIt() = runTest {
+        val id = repository.create(PatternDraft(title = "Tote"))
+        val staged = tempFolder.newFile("pattern.pdf").apply { writeText("%PDF") }
+
+        val pdfId = repository.adoptPdf(id, staged, "  Sunny   Tote ")
+
+        val pdf = repository.getPdfs(id).single()
+        assertEquals(pdfId, pdf.id)
+        assertEquals("Sunny Tote", pdf.displayName)
+        assertTrue(pdf.filePath.startsWith("patterns/$id/") && pdf.filePath.endsWith(".pdf"))
+        assertEquals("%PDF", File(root, pdf.filePath).readText())
+        assertFalse("files are moved, not copied", staged.exists())
+        assertEquals(0, pdf.lastPage)
+        assertNull(pdf.rowMarker)
+    }
+
+    @Test
+    fun pdfsAreListedInTheOrderTheyWereAdded() = runTest {
+        val id = repository.create(PatternDraft(title = "Cardigan"))
+        repository.adoptPdf(id, tempFolder.newFile("a.pdf"), "Pattern")
+        now = 2_000L
+        repository.adoptPdf(id, tempFolder.newFile("b.pdf"), "Charts")
+
+        assertEquals(listOf("Pattern", "Charts"), repository.getPdfs(id).map { it.displayName })
+    }
+
+    @Test
+    fun renamePdfIgnoresBlankNames() = runTest {
+        val id = repository.create(PatternDraft(title = "Hat"))
+        val pdfId = repository.adoptPdf(id, tempFolder.newFile("hat.pdf"), "hat")
+
+        repository.renamePdf(pdfId, " Hat, all sizes ")
+        repository.renamePdf(pdfId, "   ")
+
+        assertEquals("Hat, all sizes", repository.getPdfs(id).single().displayName)
+    }
+
+    @Test
+    fun removePdfDeletesTheRowAndTheFile() = runTest {
+        val id = repository.create(PatternDraft(title = "Hat"))
+        val pdfId = repository.adoptPdf(id, tempFolder.newFile("hat.pdf"), "Hat")
+        val path = repository.getPdfs(id).single().filePath
+
+        repository.removePdf(pdfId)
+
+        assertTrue(repository.getPdfs(id).isEmpty())
+        assertFalse(File(root, path).exists())
+    }
+
+    @Test
+    fun pageAndRowMarkerAreRemembered() = runTest {
+        val id = repository.create(PatternDraft(title = "Blanket"))
+        val pdfId = repository.adoptPdf(id, tempFolder.newFile("blanket.pdf"), "Blanket")
+
+        repository.setPdfPage(pdfId, 3)
+        repository.setRowMarker(pdfId, RowMarker(page = 3, top = 0.4f, height = 0.05f))
+        assertEquals(3, repository.getPdfs(id).single().lastPage)
+        assertEquals(RowMarker(3, 0.4f, 0.05f), repository.getPdfs(id).single().rowMarker)
+
+        repository.setRowMarker(pdfId, null)
+        assertNull(repository.getPdfs(id).single().rowMarker)
+    }
+
+    @Test
+    fun deletingPatternRemovesItsPdfs() = runTest {
+        val id = repository.create(PatternDraft(title = "Blanket"))
+        val pdfId = repository.adoptPdf(id, tempFolder.newFile("blanket.pdf"), "Blanket")
+
+        repository.delete(id)
+
+        assertNull(db.patternDao().getAttachment(pdfId))
+        assertFalse(File(root, "patterns/$id").exists())
     }
 
     @Test
