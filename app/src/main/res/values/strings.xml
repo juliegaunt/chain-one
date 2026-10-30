@@ -154,6 +154,8 @@
     <string name="tab_counter">Counter</string>
     <string name="counter_default_name">Row</string>
     <string name="counter_undo">Undo</string>
+    <string name="counter_undo_title">Undo last change</string>
+    <string name="counter_undo_hint">Takes back the last count, reset, set number or row tap, on any counter here.</string>
     <string name="counter_count_up">Add one to %1$s</string>
     <string name="counter_count_down">Take one from %1$s</string>
     <string name="counter_open">Open the Counter tab</string>

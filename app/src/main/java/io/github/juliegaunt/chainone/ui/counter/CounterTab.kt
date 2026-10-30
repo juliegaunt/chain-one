@@ -17,7 +17,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MoreVert
@@ -30,6 +32,7 @@ import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -54,6 +57,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -62,7 +66,7 @@ import io.github.juliegaunt.chainone.data.db.Counter
 import io.github.juliegaunt.chainone.data.repository.RepeatProgress
 import io.github.juliegaunt.chainone.data.repository.repeatProgress
 
-/** The Counter tab: a large card per counter, Undo, adding counters, and the counting options. */
+/** The Counter tab: a card per counter, adding counters, then Undo and the counting options. */
 @Composable
 fun CounterTab(state: CounterUiState, viewModel: CounterViewModel, modifier: Modifier = Modifier) {
     var adding by rememberSaveable { mutableStateOf(false) }
@@ -75,15 +79,6 @@ fun CounterTab(state: CounterUiState, viewModel: CounterViewModel, modifier: Mod
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        item {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                TextButton(onClick = viewModel::undo, enabled = state.canUndo) {
-                    Icon(painterResource(R.drawable.ic_undo), contentDescription = null, Modifier.size(18.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.counter_undo))
-                }
-            }
-        }
         itemsIndexed(state.counters, key = { _, counter -> counter.id }) { index, counter ->
             CounterCard(
                 counter = counter,
@@ -107,6 +102,7 @@ fun CounterTab(state: CounterUiState, viewModel: CounterViewModel, modifier: Mod
         }
         item {
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
+            UndoRow(enabled = state.canUndo, onUndo = viewModel::undo)
             SettingSwitch(
                 title = stringResource(R.string.counter_volume_keys),
                 description = stringResource(R.string.counter_volume_keys_hint),
@@ -186,7 +182,8 @@ private fun CounterCard(
     val haptics = LocalHapticFeedback.current
     val progress = counter.repeatProgress
     Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp)) {
+        // The menu button brings its own touch padding, so the card's edge is tight around it.
+        Column(Modifier.padding(start = 16.dp, end = 4.dp, top = 4.dp, bottom = 12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     counter.name,
@@ -197,36 +194,18 @@ private fun CounterCard(
                 )
                 CounterMenu(counter.name, isFirst, isLast, onSetValue, onEdit, onReset, onMove, onDelete)
             }
-            // Tapping the number lets you type one, e.g. to pick a project back up at row 37.
-            Column(
-                Modifier
-                    .fillMaxWidth()
-                    .clickable(onClickLabel = stringResource(R.string.counter_set_number), onClick = onSetValue)
-                    .padding(vertical = 4.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
+            // The number sits between the buttons, so each counter takes about half the height.
+            Row(
+                Modifier.padding(end = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text(
-                    (progress?.inRepeat ?: counter.value).toString(),
-                    style = MaterialTheme.typography.displayLarge.copy(fontSize = 72.sp, fontWeight = FontWeight.Medium),
-                )
-                if (progress != null) {
-                    Text(
-                        repeatText(progress),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = if (progress.isDone) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-            Spacer(Modifier.height(12.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 FilledTonalIconButton(
                     onClick = {
                         haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
                         onDecrement()
                     },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(72.dp),
+                    modifier = Modifier.size(width = 72.dp, height = 72.dp),
                 ) {
                     Icon(
                         painterResource(R.drawable.ic_remove),
@@ -234,14 +213,29 @@ private fun CounterCard(
                         modifier = Modifier.size(32.dp),
                     )
                 }
+                // Tapping the number lets you type one, e.g. to pick a project back up at row 37.
+                Column(
+                    Modifier
+                        .weight(1f)
+                        .clickable(onClickLabel = stringResource(R.string.counter_set_number), onClick = onSetValue),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    CounterNumber(progress?.inRepeat ?: counter.value)
+                    if (progress != null) {
+                        Text(
+                            repeatText(progress),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (progress.isDone) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                }
                 FilledIconButton(
                     onClick = {
                         haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
                         onIncrement()
                     },
-                    modifier = Modifier
-                        .weight(2f)
-                        .height(72.dp),
+                    modifier = Modifier.size(width = 104.dp, height = 72.dp),
                 ) {
                     Icon(
                         Icons.Filled.Add,
@@ -252,6 +246,20 @@ private fun CounterCard(
             }
         }
     }
+}
+
+/** The big count; a long one (rare, like 10000) shrinks to fit between the buttons rather than wrapping. */
+@Composable
+private fun CounterNumber(value: Int) {
+    val style = MaterialTheme.typography.displayLarge.copy(fontSize = 72.sp, lineHeight = 72.sp, fontWeight = FontWeight.Medium)
+    val color = LocalContentColor.current
+    BasicText(
+        value.toString(),
+        style = style,
+        color = { color },
+        maxLines = 1,
+        autoSize = TextAutoSize.StepBased(minFontSize = 32.sp, maxFontSize = 72.sp),
+    )
 }
 
 @Composable
@@ -371,6 +379,32 @@ private fun repeatText(progress: RepeatProgress): String = when {
     progress.repeatTimes != null ->
         stringResource(R.string.counter_repeat_progress_times, progress.repeatLength, progress.repeat, progress.repeatTimes)
     else -> stringResource(R.string.counter_repeat_progress, progress.repeatLength, progress.repeat)
+}
+
+/** Undo sits with the settings rather than above the counters: − covers most slips, this the rest. */
+@Composable
+private fun UndoRow(enabled: Boolean, onUndo: () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(stringResource(R.string.counter_undo_title), style = MaterialTheme.typography.bodyLarge)
+            Text(
+                stringResource(R.string.counter_undo_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Spacer(Modifier.width(16.dp))
+        OutlinedButton(onClick = onUndo, enabled = enabled) {
+            Icon(painterResource(R.drawable.ic_undo), contentDescription = null, Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(stringResource(R.string.counter_undo))
+        }
+    }
 }
 
 @Composable
