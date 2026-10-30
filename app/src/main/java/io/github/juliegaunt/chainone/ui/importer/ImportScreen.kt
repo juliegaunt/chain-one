@@ -1,5 +1,7 @@
 package io.github.juliegaunt.chainone.ui.importer
 
+import io.github.juliegaunt.chainone.ui.components.ProgressRow
+import io.github.juliegaunt.chainone.ui.components.ErrorCard
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -7,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -16,9 +17,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -33,7 +31,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
@@ -105,13 +102,7 @@ fun ImportScreen(
             }
 
             when (phase) {
-                ImportPhase.Loading -> Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 3.dp)
-                    Text(stringResource(R.string.import_loading), style = MaterialTheme.typography.bodyLarge)
-                }
+                ImportPhase.Loading -> ProgressRow(stringResource(R.string.import_loading))
                 is ImportPhase.Failed -> ImportError(
                     problem = phase.problem,
                     onRetry = { viewModel.start() },
@@ -165,21 +156,12 @@ private fun PasteButton(enabled: Boolean, onPaste: (String) -> Unit) {
 
 @Composable
 private fun ImportError(problem: ImportProblem?, onRetry: () -> Unit, onSaveLinkOnly: () -> Unit) {
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer,
-            contentColor = MaterialTheme.colorScheme.onErrorContainer,
-        ),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(stringResource(problem.messageRes), style = MaterialTheme.typography.bodyLarge)
-            // A bad link can only be fixed by editing it, so the buttons would just repeat the error.
-            if (problem != ImportProblem.INVALID_LINK) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = onRetry) { Text(stringResource(R.string.import_try_again)) }
-                    TextButton(onClick = onSaveLinkOnly) { Text(stringResource(R.string.import_save_link_only)) }
-                }
+    ErrorCard(stringResource(problem.messageRes)) {
+        // A bad link can only be fixed by editing it, so the buttons would just repeat the error.
+        if (problem != ImportProblem.INVALID_LINK) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = onRetry) { Text(stringResource(R.string.import_try_again)) }
+                TextButton(onClick = onSaveLinkOnly) { Text(stringResource(R.string.import_save_link_only)) }
             }
         }
     }

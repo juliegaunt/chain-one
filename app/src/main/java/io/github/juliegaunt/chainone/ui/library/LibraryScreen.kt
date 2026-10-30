@@ -1,5 +1,7 @@
 package io.github.juliegaunt.chainone.ui.library
 
+import io.github.juliegaunt.chainone.ui.components.RenameDialog
+import io.github.juliegaunt.chainone.ui.components.ConfirmDialog
 import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -42,7 +44,6 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
@@ -60,7 +61,6 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -88,10 +88,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -320,29 +318,21 @@ fun LibraryScreen(
         )
     }
     state.tags.firstOrNull { it.id == renamingTagId }?.let { tag ->
-        RenameTagDialog(
-            tag = tag,
-            onRename = { name ->
-                viewModel.renameTag(tag.id, name)
-                renamingTagId = null
-            },
+        RenameDialog(
+            title = stringResource(R.string.tag_rename_title),
+            current = tag.name,
+            hint = stringResource(R.string.tag_rename_hint),
+            onRename = { viewModel.renameTag(tag.id, it) },
             onDismiss = { renamingTagId = null },
         )
     }
     state.tags.firstOrNull { it.id == deletingTagId }?.let { tag ->
-        AlertDialog(
-            onDismissRequest = { deletingTagId = null },
-            title = { Text(stringResource(R.string.tag_delete_title, tag.name)) },
-            text = { Text(pluralStringResource(R.plurals.tag_delete_message, tag.patternCount, tag.patternCount)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.deleteTag(tag.id)
-                    deletingTagId = null
-                }) { Text(stringResource(R.string.action_delete)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { deletingTagId = null }) { Text(stringResource(R.string.action_cancel)) }
-            },
+        ConfirmDialog(
+            title = stringResource(R.string.tag_delete_title, tag.name),
+            text = pluralStringResource(R.plurals.tag_delete_message, tag.patternCount, tag.patternCount),
+            confirmLabel = stringResource(R.string.action_delete),
+            onConfirm = { viewModel.deleteTag(tag.id) },
+            onDismiss = { deletingTagId = null },
         )
     }
 
@@ -611,42 +601,6 @@ private fun TagRow(tag: TagCount, checked: Boolean, onToggle: () -> Unit, onRena
         },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         modifier = Modifier.toggleable(value = checked, role = Role.Checkbox, onValueChange = { onToggle() }),
-    )
-}
-
-/** Opens with the old name selected, so typing replaces it. */
-@Composable
-private fun RenameTagDialog(tag: TagCount, onRename: (String) -> Unit, onDismiss: () -> Unit) {
-    var field by rememberSaveable(tag.id, stateSaver = TextFieldValue.Saver) {
-        mutableStateOf(TextFieldValue(tag.name, selection = TextRange(0, tag.name.length)))
-    }
-    val name = field.text
-    val focusRequester = remember { FocusRequester() }
-    LaunchedEffect(Unit) { focusRequester.requestFocus() }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.tag_rename_title)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = field,
-                    onValueChange = { field = it },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                    keyboardActions = KeyboardActions(onDone = { if (name.isNotBlank()) onRename(name) }),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .focusRequester(focusRequester),
-                )
-                Text(stringResource(R.string.tag_rename_hint), style = MaterialTheme.typography.bodySmall)
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = { onRename(name) }, enabled = name.isNotBlank()) { Text(stringResource(R.string.action_rename)) }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
-        },
     )
 }
 

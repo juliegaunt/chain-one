@@ -1,5 +1,6 @@
 package io.github.juliegaunt.chainone.ui.counter
 
+import io.github.juliegaunt.chainone.ui.components.ConfirmDialog
 import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -49,8 +50,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -149,19 +148,12 @@ fun CounterTab(state: CounterUiState, viewModel: CounterViewModel, modifier: Mod
         )
     }
     state.counters.firstOrNull { it.id == deletingId }?.let { counter ->
-        AlertDialog(
-            onDismissRequest = { deletingId = null },
-            title = { Text(stringResource(R.string.counter_delete_title, counter.name)) },
-            text = { Text(stringResource(R.string.counter_delete_message)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.delete(counter.id)
-                    deletingId = null
-                }) { Text(stringResource(R.string.action_delete)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { deletingId = null }) { Text(stringResource(R.string.action_cancel)) }
-            },
+        ConfirmDialog(
+            title = stringResource(R.string.counter_delete_title, counter.name),
+            text = stringResource(R.string.counter_delete_message),
+            confirmLabel = stringResource(R.string.action_delete),
+            onConfirm = { viewModel.delete(counter.id) },
+            onDismiss = { deletingId = null },
         )
     }
 }
@@ -179,7 +171,6 @@ private fun CounterCard(
     onMove: (Int) -> Unit,
     onDelete: () -> Unit,
 ) {
-    val haptics = LocalHapticFeedback.current
     val progress = counter.repeatProgress
     Card(Modifier.fillMaxWidth()) {
         // The menu button brings its own touch padding, so the card's edge is tight around it.
@@ -201,10 +192,7 @@ private fun CounterCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 FilledTonalIconButton(
-                    onClick = {
-                        haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                        onDecrement()
-                    },
+                    onClick = withTick(onDecrement),
                     modifier = Modifier.size(width = 72.dp, height = 72.dp),
                 ) {
                     Icon(
@@ -231,10 +219,7 @@ private fun CounterCard(
                     }
                 }
                 FilledIconButton(
-                    onClick = {
-                        haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                        onIncrement()
-                    },
+                    onClick = withTick(onIncrement),
                     modifier = Modifier.size(width = 104.dp, height = 72.dp),
                 ) {
                     Icon(
@@ -311,7 +296,6 @@ fun CounterBar(
     onOpen: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val haptics = LocalHapticFeedback.current
     Surface(color = MaterialTheme.colorScheme.surfaceContainer, tonalElevation = 3.dp, modifier = modifier.fillMaxWidth()) {
         Row(
             Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
@@ -342,10 +326,7 @@ fun CounterBar(
                 )
             }
             FilledTonalIconButton(
-                onClick = {
-                    haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                    onDecrement()
-                },
+                onClick = withTick(onDecrement),
                 modifier = Modifier.size(56.dp),
             ) {
                 Icon(
@@ -355,10 +336,7 @@ fun CounterBar(
             }
             Spacer(Modifier.width(12.dp))
             FilledIconButton(
-                onClick = {
-                    haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                    onIncrement()
-                },
+                onClick = withTick(onIncrement),
                 modifier = Modifier
                     .width(88.dp)
                     .height(56.dp),
@@ -384,21 +362,7 @@ private fun repeatText(progress: RepeatProgress): String = when {
 /** Undo sits with the settings rather than above the counters: − covers most slips, this the rest. */
 @Composable
 private fun UndoRow(enabled: Boolean, onUndo: () -> Unit) {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(stringResource(R.string.counter_undo_title), style = MaterialTheme.typography.bodyLarge)
-            Text(
-                stringResource(R.string.counter_undo_hint),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        Spacer(Modifier.width(16.dp))
+    SettingRow(stringResource(R.string.counter_undo_title), stringResource(R.string.counter_undo_hint)) {
         OutlinedButton(onClick = onUndo, enabled = enabled) {
             Icon(painterResource(R.drawable.ic_undo), contentDescription = null, Modifier.size(18.dp))
             Spacer(Modifier.width(8.dp))
@@ -409,10 +373,17 @@ private fun UndoRow(enabled: Boolean, onUndo: () -> Unit) {
 
 @Composable
 private fun SettingSwitch(title: String, description: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    SettingRow(title, description, Modifier.toggleable(value = checked, role = Role.Switch, onValueChange = onChange)) {
+        Switch(checked = checked, onCheckedChange = null)
+    }
+}
+
+/** A setting's name and what it does, with its control on the right. */
+@Composable
+private fun SettingRow(title: String, description: String, modifier: Modifier = Modifier, control: @Composable () -> Unit) {
     Row(
-        Modifier
+        modifier
             .fillMaxWidth()
-            .toggleable(value = checked, role = Role.Switch, onValueChange = onChange)
             .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -421,7 +392,7 @@ private fun SettingSwitch(title: String, description: String, checked: Boolean, 
             Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Spacer(Modifier.width(16.dp))
-        Switch(checked = checked, onCheckedChange = null)
+        control()
     }
 }
 

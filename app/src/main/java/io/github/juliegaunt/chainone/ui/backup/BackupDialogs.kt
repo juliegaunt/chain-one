@@ -1,18 +1,14 @@
 package io.github.juliegaunt.chainone.ui.backup
 
+import io.github.juliegaunt.chainone.ui.components.ProgressRow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.size
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -32,19 +28,15 @@ fun BackupDialogs(phase: BackupPhase, onConfirmRestore: () -> Unit, onCancelRest
             properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false),
             confirmButton = {},
             text = {
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    CircularProgressIndicator(Modifier.size(28.dp), strokeWidth = 3.dp)
-                    Text(
-                        stringResource(
-                            when (phase.task) {
-                                BackupTask.SAVING -> R.string.backup_saving
-                                BackupTask.READING -> R.string.backup_reading
-                                BackupTask.RESTORING -> R.string.backup_restoring
-                            },
-                        ),
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
-                }
+                ProgressRow(
+                    stringResource(
+                        when (phase.task) {
+                            BackupTask.SAVING -> R.string.backup_saving
+                            BackupTask.READING -> R.string.backup_reading
+                            BackupTask.RESTORING -> R.string.backup_restoring
+                        },
+                    ),
+                )
             },
         )
         is BackupPhase.ConfirmRestore -> {

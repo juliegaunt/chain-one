@@ -1,5 +1,6 @@
 package io.github.juliegaunt.chainone.ui.pattern
 
+import io.github.juliegaunt.chainone.ui.components.ConfirmDialog
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -27,7 +28,6 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.DropdownMenu
@@ -57,8 +57,6 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
@@ -85,6 +83,7 @@ import io.github.juliegaunt.chainone.ui.counter.CounterTab
 import io.github.juliegaunt.chainone.ui.counter.CounterUiState
 import io.github.juliegaunt.chainone.ui.counter.CounterViewModel
 import io.github.juliegaunt.chainone.ui.counter.LocalVolumeKeys
+import io.github.juliegaunt.chainone.ui.counter.withTick
 import java.io.File
 
 private const val MAX_FIXED_TABS = 4
@@ -261,19 +260,12 @@ fun PatternDetailScreen(
     }
 
     if (confirmDelete && pattern != null) {
-        AlertDialog(
-            onDismissRequest = { confirmDelete = false },
-            title = { Text(stringResource(R.string.delete_pattern_title)) },
-            text = { Text(stringResource(R.string.delete_pattern_message, pattern.title)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    confirmDelete = false
-                    viewModel.delete()
-                }) { Text(stringResource(R.string.action_delete)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { confirmDelete = false }) { Text(stringResource(R.string.action_cancel)) }
-            },
+        ConfirmDialog(
+            title = stringResource(R.string.delete_pattern_title),
+            text = stringResource(R.string.delete_pattern_message, pattern.title),
+            confirmLabel = stringResource(R.string.action_delete),
+            onConfirm = viewModel::delete,
+            onDismiss = { confirmDelete = false },
         )
     }
 }
@@ -541,15 +533,11 @@ private fun CountingEffects(active: Boolean, state: CounterUiState, onVolumeUp: 
     }
 
     val volumeKeys = LocalVolumeKeys.current
-    val haptics = LocalHapticFeedback.current
     val countWithKeys = active && state.countWithVolumeKeys
-    val up by rememberUpdatedState(onVolumeUp)
-    val down by rememberUpdatedState(onVolumeDown)
+    val up by rememberUpdatedState(withTick(onVolumeUp))
+    val down by rememberUpdatedState(withTick(onVolumeDown))
     DisposableEffect(countWithKeys) {
-        val handler: (Boolean) -> Unit = { isUp ->
-            haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
-            if (isUp) up() else down()
-        }
+        val handler: (Boolean) -> Unit = { isUp -> if (isUp) up() else down() }
         if (countWithKeys) volumeKeys.handler = handler
         onDispose { if (volumeKeys.handler === handler) volumeKeys.handler = null }
     }

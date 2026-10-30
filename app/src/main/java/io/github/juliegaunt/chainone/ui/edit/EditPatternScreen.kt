@@ -1,4 +1,6 @@
 package io.github.juliegaunt.chainone.ui.edit
+import io.github.juliegaunt.chainone.ui.components.RenameDialog
+import io.github.juliegaunt.chainone.ui.components.ConfirmDialog
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -25,7 +27,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -56,16 +57,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -158,20 +155,12 @@ fun EditPatternScreen(
     }
 
     if (confirmDiscard) {
-        AlertDialog(
-            onDismissRequest = { confirmDiscard = false },
-            title = {
-                Text(stringResource(if (state.review != null) R.string.edit_discard_import_title else R.string.edit_discard_title))
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    confirmDiscard = false
-                    onBack()
-                }) { Text(stringResource(R.string.action_discard)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { confirmDiscard = false }) { Text(stringResource(R.string.action_keep_editing)) }
-            },
+        ConfirmDialog(
+            title = stringResource(if (state.review != null) R.string.edit_discard_import_title else R.string.edit_discard_title),
+            confirmLabel = stringResource(R.string.action_discard),
+            dismissLabel = stringResource(R.string.action_keep_editing),
+            onConfirm = onBack,
+            onDismiss = { confirmDiscard = false },
         )
     }
 }
@@ -379,40 +368,13 @@ private fun PdfList(
         }
     }
 
-    val pdf = pdfs.firstOrNull { it.key == renaming }
-    if (pdf != null) {
-        // Starts with the whole name selected, so typing replaces it.
-        var name by rememberSaveable(pdf.key, stateSaver = TextFieldValue.Saver) {
-            mutableStateOf(TextFieldValue(pdf.name, TextRange(0, pdf.name.length)))
-        }
-        val focus = remember { FocusRequester() }
-        LaunchedEffect(pdf.key) { focus.requestFocus() }
-        AlertDialog(
-            onDismissRequest = { renaming = null },
-            title = { Text(stringResource(R.string.edit_rename_pdf)) },
-            text = {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .focusRequester(focus),
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    enabled = name.text.isNotBlank(),
-                    onClick = {
-                        onRename(pdf.key, name.text)
-                        renaming = null
-                    },
-                ) { Text(stringResource(R.string.action_done)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { renaming = null }) { Text(stringResource(R.string.action_cancel)) }
-            },
+    pdfs.firstOrNull { it.key == renaming }?.let { pdf ->
+        RenameDialog(
+            title = stringResource(R.string.edit_rename_pdf),
+            current = pdf.name,
+            onRename = { onRename(pdf.key, it) },
+            onDismiss = { renaming = null },
+            capitalization = KeyboardCapitalization.Sentences,
         )
     }
 }
