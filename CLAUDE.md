@@ -48,6 +48,7 @@ Offline, ad-free Android app for storing crochet patterns (from URLs and PDFs) w
 - File paths in the DB are relative to `filesDir`, under `patterns/<id>/` (see `FileStore`)
 - UI strings go in `res/values/strings.xml`
 - Logo source is `design/chain-one-logo.svg`; `ic_logo.xml` and `ic_launcher_foreground.xml` are hand-converted from its path
+- The launch screen (Android 12+, `values-v31` and `values-night-v31` themes) uses `ic_splash.xml`: the same logo path plus "Chain One" as Noto Sans Medium outlines (made with fontTools), kept inside the 192dp circle of the 288dp canvas
 - DB tests use Robolectric (`./gradlew testDebugUnitTest`)
 - The network is used only in `data/importer/WebClient.kt`; imports wait in `cache/imports/<id>/` (`ImportStaging`) until saved from the review (edit) screen
 - Schema changes: bump the version, add an `AutoMigration` (or a manual one), commit the new `app/schemas/*.json`, and extend `MigrationTest`

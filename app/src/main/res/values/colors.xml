@@ -3,4 +3,6 @@
     <color name="window_background">#FFFFFBFF</color>
     <color name="ic_launcher_background">#FFFFFFFF</color>
     <color name="ic_launcher_logo">#FFD14D72</color>
+    <!-- The "Chain One" under the logo on the launch screen; the app's outline gray. -->
+    <color name="splash_text">#FF847375</color>
 </resources>
