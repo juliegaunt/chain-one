@@ -56,6 +56,21 @@ Gradle needs JDK 17 or newer. The JDK bundled with Android Studio works:
 export JAVA_HOME=/path/to/android-studio/jbr
 ```
 
+### Making a signed release
+
+Release builds are shrunk with R8 and signed with a private key that is never committed. Put its details in `keystore.properties` in the project folder (Git ignores this file):
+
+```
+storeFile=/path/to/chain-one-release.jks
+keyAlias=chain-one
+storePassword=…
+keyPassword=…
+```
+
+Then run `./gradlew assembleRelease`; the signed APK is `app/build/outputs/apk/release/app-release.apk`. Without `keystore.properties` the release build is unsigned. Raise `versionCode` (and set `versionName`) in `app/build.gradle.kts` for every release.
+
+Debug builds install as a separate app, **Chain One (debug)**, so testing never touches the real one.
+
 ## Running on your phone
 
 1. On the phone, open **Settings → About phone** and tap **Build number** seven times. This turns on Developer options.

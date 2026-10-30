@@ -53,6 +53,7 @@ Offline, ad-free Android app for storing crochet patterns (from URLs and PDFs) w
 - Logo source is `design/chain-one-logo.svg`; `ic_logo.xml` and `ic_launcher_foreground.xml` are hand-converted from its path
 - The launch screen (Android 12+, `values-v31` and `values-night-v31` themes) uses `ic_splash.xml`: the same logo path plus "Chain One" as Noto Sans Medium outlines (made with fontTools), kept inside the 192dp circle of the 288dp canvas
 - DB tests use Robolectric (`./gradlew testDebugUnitTest`)
+- Releases are signed from `keystore.properties` (gitignored; the key lives in `~/AndroidKeys/`, never in the repo). Never read or print that file's passwords. Debug builds use applicationId suffix `.debug`, so they install beside the real app
 - The network is used only in `data/importer/WebClient.kt`; imports wait in `cache/imports/<id>/` (`ImportStaging`) until saved from the review (edit) screen
 - Schema changes: bump the version, add an `AutoMigration` (or a manual one), commit the new `app/schemas/*.json`, and extend `MigrationTest`
 - `InstructionRows` finds rows ("Row 3:", "Rnd 3", "R7-R19:", "3.") and splits them into sections where numbering restarts; the main counter's `rowSection` picks the section
@@ -71,4 +72,4 @@ Offline, ad-free Android app for storing crochet patterns (from URLs and PDFs) w
 - Milestone 5 done (row highlighting; schema v3 for `counters.rowSection`)
 - Milestone 6 done (PDF import, viewer, row marker; schema v4). Links to PDFs on the web import screen import the PDF
 - Milestone 7 done (backup/restore). All planned milestones are done
-- Next: the first public release (signed release build tested with R8 on, version 1.0.0, publishing). Possible later: row highlighting on the Web page tab (would need scripts enabled for the app's own code only); copying a PDF's text into Instructions (Android 15+ only)
+- Release 1.0.0: signed build made (signing certificate SHA-256 ea5c32b25e8ada5f9061e4c60f23151dee223013ddd319b8900377c3a1382560); next it's tested on the owner's phone and published on GitHub Releases, then F-Droid (decide on reproducible builds). Possible later: row highlighting on the Web page tab (would need scripts enabled for the app's own code only); copying a PDF's text into Instructions (Android 15+ only)
