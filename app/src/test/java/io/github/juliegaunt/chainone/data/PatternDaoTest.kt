@@ -81,14 +81,16 @@ class PatternDaoTest {
     }
 
     @Test
-    fun setFavoriteChangesFlagAndTimestamp() = runTest {
-        val id = dao.insert(pattern("Amigurumi Fox", updatedAt = 1))
+    fun favoritingKeepsThePatternsPlaceInTheLibrary() = runTest {
+        val fox = dao.insert(pattern("Amigurumi Fox", updatedAt = 1))
+        dao.insert(pattern("Hat", updatedAt = 2))
 
-        dao.setFavorite(id, favorite = true, updatedAt = 50)
+        dao.setFavorite(fox, favorite = true)
 
-        val loaded = dao.getPattern(id)!!
+        val loaded = dao.getPattern(fox)!!
         assertTrue(loaded.isFavorite)
-        assertEquals(50, loaded.updatedAt)
+        assertEquals(1, loaded.updatedAt)
+        assertEquals(listOf("Hat", "Amigurumi Fox"), dao.observeLibrary(LibraryQuery.build(LibraryFilter())).first().map { it.title })
     }
 
     @Test

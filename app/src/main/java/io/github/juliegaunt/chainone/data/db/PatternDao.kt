@@ -32,8 +32,9 @@ interface PatternDao {
     @Update
     suspend fun update(pattern: Pattern)
 
-    @Query("UPDATE patterns SET isFavorite = :favorite, updatedAt = :updatedAt WHERE id = :id")
-    suspend fun setFavorite(id: Long, favorite: Boolean, updatedAt: Long)
+    /** Leaves updatedAt alone: tapping a heart shouldn't move the pattern in the library's order. */
+    @Query("UPDATE patterns SET isFavorite = :favorite WHERE id = :id")
+    suspend fun setFavorite(id: Long, favorite: Boolean)
 
     @Query("UPDATE patterns SET coverImagePath = :path, updatedAt = :updatedAt WHERE id = :id")
     suspend fun setCoverImagePath(id: Long, path: String?, updatedAt: Long)

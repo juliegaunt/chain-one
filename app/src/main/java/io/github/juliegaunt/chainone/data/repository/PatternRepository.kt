@@ -112,7 +112,7 @@ class PatternRepository(
     /** Removes a tag from every pattern. */
     suspend fun deleteTag(id: Long) = dao.deleteTag(id)
 
-    suspend fun setFavorite(id: Long, favorite: Boolean) = dao.setFavorite(id, favorite, clock())
+    suspend fun setFavorite(id: Long, favorite: Boolean) = dao.setFavorite(id, favorite)
 
     suspend fun markOpened(id: Long) = dao.setLastOpened(id, clock())
 
