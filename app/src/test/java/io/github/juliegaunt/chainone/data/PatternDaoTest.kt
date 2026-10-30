@@ -106,7 +106,7 @@ class PatternDaoTest {
         val id = dao.insert(pattern("Cardigan"))
         val keepId = dao.insert(pattern("Keep me"))
         dao.insertImage(PatternImage(patternId = id, filePath = "patterns/$id/a.jpg", position = 0))
-        dao.insertAttachment(PatternAttachment(patternId = id, filePath = "patterns/$id/p.pdf", displayName = "p.pdf", addedAt = 1))
+        db.pdfDao().insert(PatternAttachment(patternId = id, filePath = "patterns/$id/p.pdf", displayName = "p.pdf", addedAt = 1))
         val sql = db.openHelper.writableDatabase
         sql.execSQL("INSERT INTO counters (id, patternId, name, value, position, updatedAt) VALUES (1, $id, 'Row', 3, 0, 1)")
         sql.execSQL("INSERT INTO counter_history (counterId, previousValue, createdAt) VALUES (1, 2, 1)")

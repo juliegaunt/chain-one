@@ -18,6 +18,7 @@ import io.github.juliegaunt.chainone.data.importer.StagedImport
 import io.github.juliegaunt.chainone.data.repository.CounterRepository
 import io.github.juliegaunt.chainone.data.repository.PatternDraft
 import io.github.juliegaunt.chainone.data.repository.PatternRepository
+import io.github.juliegaunt.chainone.data.repository.PdfRepository
 import io.github.juliegaunt.chainone.data.settings.AppSettings
 import io.github.juliegaunt.chainone.data.settings.LibraryLayout
 import kotlinx.coroutines.flow.first
@@ -59,6 +60,7 @@ class BackupTest {
         val db: ChainOneDatabase = Room.inMemoryDatabaseBuilder(context, ChainOneDatabase::class.java).allowMainThreadQueries().build()
         val root: File = tempFolder.newFolder()
         val patterns = PatternRepository(db.patternDao(), FileStore(root, context.contentResolver)) { now++ }
+        val pdfs = PdfRepository(db.pdfDao(), FileStore(root, context.contentResolver)) { now++ }
         val counters = CounterRepository(db.counterDao(), db.patternDao()) { now++ }
         val backup = LibraryBackup(db.backupDao(), root, settings, appVersion = "test") { 1_700_000_000_000L }
     }
@@ -85,9 +87,9 @@ class BackupTest {
         )
         phone.patterns.setFavorite(blanket, true)
         phone.patterns.setCover(blanket, "cover".byteInputStream(), "jpg")
-        val pdf = phone.patterns.adoptPdf(blanket, tempFolder.newFile("blanket.pdf").apply { writeText("%PDF blanket") }, "Blanket chart")
-        phone.patterns.setPdfPage(pdf, 2)
-        phone.patterns.setRowMarker(pdf, RowMarker(page = 2, top = 0.4f, height = 0.035f))
+        val pdf = phone.pdfs.adoptPdf(blanket, tempFolder.newFile("blanket.pdf").apply { writeText("%PDF blanket") }, "Blanket chart")
+        phone.pdfs.setPage(pdf, 2)
+        phone.pdfs.setRowMarker(pdf, RowMarker(page = 2, top = 0.4f, height = 0.035f))
         val row = phone.counters.add(blanket, "Row")
         repeat(12) { phone.counters.increment(row) }
         phone.counters.jumpToRow(blanket, "Row", value = 12, section = 1)

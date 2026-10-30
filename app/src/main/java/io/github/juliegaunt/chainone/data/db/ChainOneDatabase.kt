@@ -33,6 +33,8 @@ abstract class ChainOneDatabase : RoomDatabase() {
 
     abstract fun counterDao(): CounterDao
 
+    abstract fun pdfDao(): PdfDao
+
     abstract fun backupDao(): BackupDao
 
     companion object {

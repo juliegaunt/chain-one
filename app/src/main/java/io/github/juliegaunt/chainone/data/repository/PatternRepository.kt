@@ -4,12 +4,10 @@ import android.net.Uri
 import io.github.juliegaunt.chainone.data.db.LibraryFilter
 import io.github.juliegaunt.chainone.data.db.LibraryQuery
 import io.github.juliegaunt.chainone.data.db.Pattern
-import io.github.juliegaunt.chainone.data.db.PatternAttachment
 import io.github.juliegaunt.chainone.data.db.PatternDao
 import io.github.juliegaunt.chainone.data.db.PatternImage
 import io.github.juliegaunt.chainone.data.db.PatternStatus
 import io.github.juliegaunt.chainone.data.db.PatternSummary
-import io.github.juliegaunt.chainone.data.db.RowMarker
 import io.github.juliegaunt.chainone.data.db.SourceType
 import io.github.juliegaunt.chainone.data.db.Tag
 import io.github.juliegaunt.chainone.data.db.TagCount
@@ -18,7 +16,6 @@ import io.github.juliegaunt.chainone.data.importer.PatternImporter
 import io.github.juliegaunt.chainone.data.importer.StagedImport
 import io.github.juliegaunt.chainone.data.importer.UrlTools
 import kotlinx.coroutines.flow.Flow
-import java.io.File
 import java.io.InputStream
 
 /** The fields a person can type in on the edit screen. */
@@ -53,10 +50,6 @@ class PatternRepository(
     suspend fun getTagNames(patternId: Long): List<String> = dao.getTagsFor(patternId).map { it.name }
 
     fun observePattern(id: Long): Flow<Pattern?> = dao.observePattern(id)
-
-    fun observeImages(patternId: Long): Flow<List<PatternImage>> = dao.observeImages(patternId)
-
-    fun observeAttachments(patternId: Long): Flow<List<PatternAttachment>> = dao.observeAttachments(patternId)
 
     suspend fun getPattern(id: Long): Pattern? = dao.getPattern(id)
 
@@ -140,44 +133,6 @@ class PatternRepository(
         }
     }
 
-    suspend fun getPdfs(patternId: Long): List<PatternAttachment> = dao.getAttachments(patternId)
-
-    /** Copies a PDF the person picked into the pattern. Returns the new attachment's id. */
-    suspend fun addPdf(patternId: Long, uri: Uri, name: String): Long =
-        insertPdf(patternId, files.importToPattern(patternId, uri, PDF_NAME, PDF_EXTENSION), name)
-
-    /** Moves an imported PDF (already on the phone, in the import's folder) into the pattern. */
-    suspend fun adoptPdf(patternId: Long, file: File, name: String): Long =
-        insertPdf(patternId, files.adoptIntoPattern(patternId, file, PDF_NAME), name)
-
-    suspend fun renamePdf(id: Long, name: String) {
-        val clean = cleanPdfName(name)
-        if (clean.isNotEmpty()) dao.setAttachmentName(id, clean)
-    }
-
-    /** Removes a PDF from its pattern and deletes the file. */
-    suspend fun removePdf(id: Long) {
-        val attachment = dao.getAttachment(id) ?: return
-        dao.deleteAttachment(id)
-        files.delete(attachment.filePath)
-    }
-
-    suspend fun setPdfPage(id: Long, page: Int) = dao.setAttachmentLastPage(id, page.coerceAtLeast(0))
-
-    /** Moves the PDF's row marker, or turns it off with null. */
-    suspend fun setRowMarker(id: Long, marker: RowMarker?) =
-        dao.setAttachmentMarker(id, marker?.page, marker?.top, marker?.height)
-
-    private suspend fun insertPdf(patternId: Long, path: String, name: String): Long =
-        dao.insertAttachment(
-            PatternAttachment(
-                patternId = patternId,
-                filePath = path,
-                displayName = cleanPdfName(name).ifEmpty { PDF_NAME },
-                addedAt = clock(),
-            ),
-        )
-
     suspend fun delete(id: Long) {
         dao.delete(id)
         dao.deleteUnusedTags()
@@ -192,13 +147,8 @@ class PatternRepository(
 
     private companion object {
         const val COVER_NAME = "cover"
-        const val PDF_NAME = "pdf"
-        const val PDF_EXTENSION = "pdf"
         const val MAX_TAG_LENGTH = 40
-        const val MAX_PDF_NAME_LENGTH = 120
         val SPACES = Regex("""\s+""")
-
-        fun cleanPdfName(name: String): String = name.trim().replace(SPACES, " ").take(MAX_PDF_NAME_LENGTH).trim()
 
         fun cleanTag(name: String): String = name.trim().replace(SPACES, " ").take(MAX_TAG_LENGTH).trim()
 

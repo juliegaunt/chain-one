@@ -79,7 +79,7 @@ class MigrationTest {
             assertNull(counter.rowSection)
             assertEquals(11, db.counterDao().latestHistory(1)!!.previousValue)
 
-            val pdf = db.patternDao().getAttachment(1)!!
+            val pdf = db.pdfDao().get(1)!!
             assertEquals("Blanket", pdf.displayName)
             assertEquals(4, pdf.lastPage)
             assertNull(pdf.rowMarker)

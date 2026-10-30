@@ -11,6 +11,7 @@ import io.github.juliegaunt.chainone.data.importer.PdfImporter
 import io.github.juliegaunt.chainone.data.pdf.RendererPdfInspector
 import io.github.juliegaunt.chainone.data.repository.CounterRepository
 import io.github.juliegaunt.chainone.data.repository.PatternRepository
+import io.github.juliegaunt.chainone.data.repository.PdfRepository
 import io.github.juliegaunt.chainone.data.settings.AppSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -23,6 +24,7 @@ class AppContainer(context: Context) {
     val database: ChainOneDatabase = ChainOneDatabase.build(context)
     val fileStore = FileStore(context.filesDir, context.contentResolver)
     val patternRepository = PatternRepository(database.patternDao(), fileStore)
+    val pdfRepository = PdfRepository(database.pdfDao(), fileStore)
     val counterRepository = CounterRepository(database.counterDao(), database.patternDao())
     val settings = AppSettings(context)
     val libraryBackup = LibraryBackup(

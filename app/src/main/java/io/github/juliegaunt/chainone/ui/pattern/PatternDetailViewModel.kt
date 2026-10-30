@@ -14,6 +14,7 @@ import io.github.juliegaunt.chainone.data.db.RowMarker
 import io.github.juliegaunt.chainone.data.db.Tag
 import io.github.juliegaunt.chainone.data.files.FileStore
 import io.github.juliegaunt.chainone.data.repository.PatternRepository
+import io.github.juliegaunt.chainone.data.repository.PdfRepository
 import io.github.juliegaunt.chainone.ui.components.coverFile
 import io.github.juliegaunt.chainone.ui.navigation.ARG_PATTERN_ID
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -39,6 +40,7 @@ data class PatternDetailUiState(
 class PatternDetailViewModel(
     savedStateHandle: SavedStateHandle,
     private val repository: PatternRepository,
+    private val pdfRepository: PdfRepository,
     private val fileStore: FileStore,
 ) : ViewModel() {
 
@@ -48,7 +50,7 @@ class PatternDetailViewModel(
     val uiState: StateFlow<PatternDetailUiState> = combine(
         repository.observePattern(patternId),
         repository.observeTagsFor(patternId),
-        repository.observeAttachments(patternId),
+        pdfRepository.observePdfs(patternId),
         isDeleted,
     ) { pattern, tags, pdfs, deleted ->
         PatternDetailUiState(
@@ -78,11 +80,11 @@ class PatternDetailViewModel(
     fun pdfFile(pdf: PatternAttachment): File = fileStore.resolve(pdf.filePath)
 
     fun setPdfPage(pdfId: Long, page: Int) {
-        viewModelScope.launch { repository.setPdfPage(pdfId, page) }
+        viewModelScope.launch { pdfRepository.setPage(pdfId, page) }
     }
 
     fun setRowMarker(pdfId: Long, marker: RowMarker?) {
-        viewModelScope.launch { repository.setRowMarker(pdfId, marker) }
+        viewModelScope.launch { pdfRepository.setRowMarker(pdfId, marker) }
     }
 
     fun delete() {
@@ -96,7 +98,7 @@ class PatternDetailViewModel(
         val Factory = viewModelFactory {
             initializer {
                 val container = appContainer
-                PatternDetailViewModel(createSavedStateHandle(), container.patternRepository, container.fileStore)
+                PatternDetailViewModel(createSavedStateHandle(), container.patternRepository, container.pdfRepository, container.fileStore)
             }
         }
     }

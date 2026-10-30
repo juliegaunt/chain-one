@@ -19,6 +19,7 @@ import io.github.juliegaunt.chainone.data.importer.StagedImport
 import io.github.juliegaunt.chainone.data.importer.UrlTools
 import io.github.juliegaunt.chainone.data.repository.PatternDraft
 import io.github.juliegaunt.chainone.data.repository.PatternRepository
+import io.github.juliegaunt.chainone.data.repository.PdfRepository
 import io.github.juliegaunt.chainone.ui.components.coverFile
 import io.github.juliegaunt.chainone.ui.navigation.ARG_IMPORT_ID
 import io.github.juliegaunt.chainone.ui.navigation.ARG_PATTERN_ID
@@ -152,6 +153,7 @@ private val SPACES = Regex("""\s+""")
 class EditPatternViewModel(
     savedStateHandle: SavedStateHandle,
     private val repository: PatternRepository,
+    private val pdfRepository: PdfRepository,
     private val fileStore: FileStore,
     private val staging: ImportStaging,
     private val appScope: CoroutineScope,
@@ -198,7 +200,7 @@ class EditPatternViewModel(
             viewModelScope.launch {
                 val pattern = repository.getPattern(patternId)
                 val form = pattern?.let { PatternForm.from(it).copy(tags = repository.getTagNames(it.id)) } ?: PatternForm()
-                val pdfs = repository.getPdfs(patternId).map { PdfEntry(key = "saved-${it.id}", name = it.displayName, savedId = it.id) }
+                val pdfs = pdfRepository.getPdfs(patternId).map { PdfEntry(key = "saved-${it.id}", name = it.displayName, savedId = it.id) }
                 _uiState.update {
                     it.copy(
                         isLoading = false,
@@ -346,7 +348,7 @@ class EditPatternViewModel(
     private suspend fun savePdfs(id: Long): Boolean {
         val state = _uiState.value
         val keptIds = state.pdfs.mapNotNull { it.savedId }.toSet()
-        state.initialPdfs.mapNotNull { it.savedId }.filter { it !in keptIds }.forEach { repository.removePdf(it) }
+        state.initialPdfs.mapNotNull { it.savedId }.filter { it !in keptIds }.forEach { pdfRepository.removePdf(it) }
         val initialNames = state.initialPdfs.associate { it.key to it.name }
 
         var allSaved = true
@@ -354,11 +356,11 @@ class EditPatternViewModel(
             try {
                 when {
                     entry.savedId != null -> {
-                        if (initialNames[entry.key] != entry.name) repository.renamePdf(entry.savedId, entry.name)
+                        if (initialNames[entry.key] != entry.name) pdfRepository.renamePdf(entry.savedId, entry.name)
                         entry
                     }
-                    entry.stagedFile != null -> entry.copy(savedId = repository.adoptPdf(id, entry.stagedFile, entry.name), stagedFile = null)
-                    entry.pickedUri != null -> entry.copy(savedId = repository.addPdf(id, entry.pickedUri, entry.name), pickedUri = null)
+                    entry.stagedFile != null -> entry.copy(savedId = pdfRepository.adoptPdf(id, entry.stagedFile, entry.name), stagedFile = null)
+                    entry.pickedUri != null -> entry.copy(savedId = pdfRepository.addPdf(id, entry.pickedUri, entry.name), pickedUri = null)
                     else -> entry
                 }
             } catch (e: IOException) {
@@ -411,6 +413,7 @@ class EditPatternViewModel(
                 EditPatternViewModel(
                     createSavedStateHandle(),
                     container.patternRepository,
+                    container.pdfRepository,
                     container.fileStore,
                     container.importStaging,
                     container.appScope,
