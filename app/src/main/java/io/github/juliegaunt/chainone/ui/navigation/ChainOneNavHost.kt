@@ -40,13 +40,6 @@ const val ARG_IMPORT_ID = "importId"
 const val ARG_SHARED_TEXT = "sharedText"
 const val ARG_PDF_URI = "pdfUri"
 
-/** Something another app sent to Chain One with Share or "Open with". */
-sealed interface SharedItem {
-    /** Usually a link to a pattern page. */
-    data class Text(val text: String) : SharedItem
-    data class Pdf(val uri: Uri) : SharedItem
-}
-
 /** Set on the library's saved state to show only the patterns with this tag id. */
 const val KEY_SHOW_TAG = "showTag"
 

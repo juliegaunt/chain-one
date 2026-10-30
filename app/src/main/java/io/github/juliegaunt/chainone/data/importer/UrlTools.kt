@@ -67,6 +67,10 @@ object UrlTools {
         return slashes.flatMap { listOf("https://$it", "http://$it") }.distinct()
     }
 
+    /** True for an http or https address: the only kind the app opens, in the browser. */
+    fun isWebLink(url: String): Boolean =
+        runCatching { URI(url.trim()).scheme?.lowercase() in setOf("http", "https") }.getOrDefault(false)
+
     fun host(url: String): String =
         runCatching { URI(url).host }.getOrNull()?.removePrefix("www.") ?: url
 }

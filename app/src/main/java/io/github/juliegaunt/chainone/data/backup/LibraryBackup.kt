@@ -4,6 +4,8 @@ import android.database.SQLException
 import io.github.juliegaunt.chainone.data.db.BackupDao
 import io.github.juliegaunt.chainone.data.db.LibrarySnapshot
 import io.github.juliegaunt.chainone.data.files.FileStore
+import io.github.juliegaunt.chainone.data.files.FileTooLargeException
+import io.github.juliegaunt.chainone.data.files.copyToLimited
 import io.github.juliegaunt.chainone.data.settings.AppSettings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
@@ -30,6 +32,9 @@ enum class BackupProblem {
 
     /** A Chain One backup, but cut short or broken. */
     DAMAGED,
+
+    /** The phone hasn't room for the backup's files. */
+    NO_SPACE,
 }
 
 class BackupException(val problem: BackupProblem, cause: Throwable? = null) : IOException(problem.name, cause)
@@ -122,16 +127,27 @@ class LibraryBackup(
                 when {
                     entry.name == MANIFEST -> {
                         isBackup = true
-                        contents = BackupJson.read(readLimited(zip, MAX_MANIFEST_BYTES).decodeToString())
-                        if (unpackInto == null) break
+                        val manifest = BackupJson.read(readManifest(zip))
+                        if (unpackInto == null) return manifest
+                        if (unpackInto.usableSpace < manifest.files.values.sum() + SPACE_TO_SPARE) {
+                            throw BackupException(BackupProblem.NO_SPACE)
+                        }
+                        contents = manifest
                     }
-                    unpackInto != null && entry.name.startsWith(FILES_PREFIX) && !entry.isDirectory -> {
-                        // A file isn't trusted until its manifest has been checked.
-                        if (contents == null) throw BackupException(BackupProblem.NOT_A_BACKUP)
-                        val target = safeTarget(unpackInto, entry.name.removePrefix(FILES_PREFIX))
+                    unpackInto != null && !entry.isDirectory -> {
+                        // A file isn't trusted until its manifest has been checked, and then only
+                        // if the manifest lists it and it's no bigger than listed (no zip bombs).
+                        val manifest = contents ?: throw BackupException(BackupProblem.NOT_A_BACKUP)
+                        val path = entry.name.removePrefix(FILES_PREFIX)
+                        val size = manifest.files[path]?.takeIf { entry.name.startsWith(FILES_PREFIX) }
                             ?: throw BackupException(BackupProblem.DAMAGED)
+                        val target = safeTarget(unpackInto, path) ?: throw BackupException(BackupProblem.DAMAGED)
                         target.parentFile?.mkdirs()
-                        target.outputStream().use { zip.copyTo(it) }
+                        try {
+                            target.outputStream().use { zip.copyToLimited(it, size) }
+                        } catch (e: FileTooLargeException) {
+                            throw BackupException(BackupProblem.DAMAGED, e)
+                        }
                     }
                 }
             }
@@ -186,7 +202,7 @@ class LibraryBackup(
      * two files reads as if it simply ended there, so this is how a partial one is caught.
      */
     private fun BackupContents.allFilesIn(staging: File): Boolean =
-        files?.all { (path, size) -> safeTarget(staging, path)?.let { it.isFile && it.length() == size } == true } ?: true
+        files.all { (path, size) -> safeTarget(staging, path)?.let { it.isFile && it.length() == size } == true }
 
     /** File paths in the database must point inside the library's own folder. */
     private fun LibrarySnapshot.hasSafePaths(): Boolean {
@@ -197,16 +213,10 @@ class LibraryBackup(
         }
     }
 
-    private fun readLimited(input: InputStream, limit: Int): ByteArray {
-        val out = ByteArrayOutputStream()
-        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-        while (true) {
-            val read = input.read(buffer)
-            if (read < 0) break
-            out.write(buffer, 0, read)
-            if (out.size() > limit) throw BackupException(BackupProblem.DAMAGED)
-        }
-        return out.toByteArray()
+    private fun readManifest(zip: InputStream): String = try {
+        ByteArrayOutputStream().also { zip.copyToLimited(it, MAX_MANIFEST_BYTES) }.toString(Charsets.UTF_8.name())
+    } catch (e: FileTooLargeException) {
+        throw BackupException(BackupProblem.DAMAGED, e)
     }
 
     companion object {
@@ -216,7 +226,10 @@ class LibraryBackup(
         /** Inside the files folder, so moving them into place is a quick rename. */
         private const val RESTORE_DIR = ".restore"
         private const val PREVIOUS_DIR = ".restore-previous"
-        private const val MAX_MANIFEST_BYTES = 64 * 1024 * 1024
+        private const val MAX_MANIFEST_BYTES = 64L * 1024 * 1024
+
+        /** Room left over after a restore, so the phone isn't filled to the brim. */
+        private const val SPACE_TO_SPARE = 50L * 1024 * 1024
         private val COMPRESSED = setOf("jpg", "jpeg", "png", "webp", "gif", "pdf")
     }
 }

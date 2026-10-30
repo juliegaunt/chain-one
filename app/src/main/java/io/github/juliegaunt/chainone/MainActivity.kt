@@ -1,8 +1,6 @@
 package io.github.juliegaunt.chainone
 
-import android.content.ContentResolver
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.view.KeyEvent
 import androidx.activity.ComponentActivity
@@ -12,7 +10,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.core.content.IntentCompat
 import io.github.juliegaunt.chainone.ui.counter.LocalVolumeKeys
 import io.github.juliegaunt.chainone.ui.counter.VolumeKeys
 import io.github.juliegaunt.chainone.ui.navigation.ChainOneNavHost
@@ -30,7 +27,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         // Only on first launch: after a rotation the import screen is already showing.
-        if (savedInstanceState == null) pendingShare = sharedItem(intent)
+        if (savedInstanceState == null) pendingShare = SharedItem.from(intent)
         setContent {
             CompositionLocalProvider(LocalVolumeKeys provides volumeKeys) {
                 ChainOneTheme {
@@ -44,7 +41,7 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        sharedItem(intent)?.let { pendingShare = it }
+        SharedItem.from(intent)?.let { pendingShare = it }
     }
 
     /**
@@ -63,19 +60,4 @@ class MainActivity : ComponentActivity() {
         if (volumeKeys.handler != null && isVolumeKey(keyCode)) true else super.onKeyUp(keyCode, event)
 
     private fun isVolumeKey(keyCode: Int) = keyCode == KeyEvent.KEYCODE_VOLUME_UP || keyCode == KeyEvent.KEYCODE_VOLUME_DOWN
-
-    /** A link from Share, or a PDF from Share or "Open with". */
-    private fun sharedItem(intent: Intent?): SharedItem? = when (intent?.action) {
-        Intent.ACTION_SEND -> if (intent.type == PDF_TYPE) {
-            IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)?.let(SharedItem::Pdf)
-        } else {
-            intent.getStringExtra(Intent.EXTRA_TEXT)?.let(SharedItem::Text)
-        }
-        Intent.ACTION_VIEW -> intent.data?.takeIf { it.scheme == ContentResolver.SCHEME_CONTENT }?.let(SharedItem::Pdf)
-        else -> null
-    }
-
-    private companion object {
-        const val PDF_TYPE = "application/pdf"
-    }
 }

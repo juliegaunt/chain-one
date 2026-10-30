@@ -75,6 +75,7 @@ import io.github.juliegaunt.chainone.data.db.PatternAttachment
 import io.github.juliegaunt.chainone.data.db.PatternStatus
 import io.github.juliegaunt.chainone.data.db.RowMarker
 import io.github.juliegaunt.chainone.data.db.rowMarker
+import io.github.juliegaunt.chainone.data.importer.UrlTools
 import io.github.juliegaunt.chainone.data.db.Tag
 import io.github.juliegaunt.chainone.ui.components.PatternCover
 import io.github.juliegaunt.chainone.ui.components.colors
@@ -342,17 +343,7 @@ private fun OverviewTab(
                 }
             }
             pattern.sourceUrl?.let { url ->
-                val uriHandler = LocalUriHandler.current
-                Section(stringResource(R.string.field_source_url)) {
-                    Text(
-                        url,
-                        style = MaterialTheme.typography.bodyMedium.copy(textDecoration = TextDecoration.Underline),
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .clickable { runCatching { uriHandler.openUri(url) } }
-                            .padding(vertical = 4.dp),
-                    )
-                }
+                Section(stringResource(R.string.field_source_url)) { SourceLink(url) }
             }
         }
     }
@@ -451,6 +442,24 @@ private fun PdfTab(
             )
         }
     }
+}
+
+/** A web address opens in the browser; anything else (typed by hand, say) is shown as plain text. */
+@Composable
+private fun SourceLink(url: String) {
+    if (!UrlTools.isWebLink(url)) {
+        SelectionContainer { Text(url, style = MaterialTheme.typography.bodyMedium) }
+        return
+    }
+    val uriHandler = LocalUriHandler.current
+    Text(
+        url,
+        style = MaterialTheme.typography.bodyMedium.copy(textDecoration = TextDecoration.Underline),
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier
+            .clickable { runCatching { uriHandler.openUri(url) } }
+            .padding(vertical = 4.dp),
+    )
 }
 
 @Composable

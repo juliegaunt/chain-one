@@ -197,6 +197,7 @@
     <string name="pdf_import_loading">Copying the PDF…</string>
     <string name="pdf_error_protected">This PDF is password-protected, so Chain One can’t show it.</string>
     <string name="pdf_error_unreadable">This file couldn’t be opened. It may be damaged, or not really a PDF.</string>
+    <string name="pdf_error_too_large">This PDF is over 200 MB, too large to add to Chain One.</string>
     <string name="pdf_error_copy">Couldn’t read the file. Try picking it again.</string>
     <string name="pdf_choose">Choose a PDF</string>
     <string name="pdf_page_of">%1$d / %2$d</string>
@@ -236,6 +237,7 @@
     <string name="restore_read_failed">Couldn’t read that file. Try picking it again.</string>
     <string name="restore_not_a_backup">That isn’t a Chain One backup. Pick the .zip file made with “Back up library”.</string>
     <string name="restore_newer_version">This backup was made by a newer version of Chain One. Update the app, then restore it.</string>
+    <string name="restore_no_space">There isn’t enough free space on the phone to restore this backup. Free some up, then try again.</string>
     <string name="restore_damaged">This backup is damaged or incomplete, so nothing was changed. Try another copy of it.</string>
 
     <!-- Saved copy of a web page -->

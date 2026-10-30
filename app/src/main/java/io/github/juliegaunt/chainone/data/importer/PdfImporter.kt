@@ -2,9 +2,13 @@ package io.github.juliegaunt.chainone.data.importer
 
 import android.content.ContentResolver
 import android.net.Uri
+import io.github.juliegaunt.chainone.data.files.FileStore
+import io.github.juliegaunt.chainone.data.files.FileTooLargeException
+import io.github.juliegaunt.chainone.data.files.copyToLimited
 import io.github.juliegaunt.chainone.data.files.displayName
 import io.github.juliegaunt.chainone.data.pdf.PdfInspector
 import io.github.juliegaunt.chainone.data.pdf.PdfOpenException
+import io.github.juliegaunt.chainone.data.pdf.PdfProblem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
@@ -19,6 +23,7 @@ import java.io.InputStream
 class PdfImporter(
     private val staging: ImportStaging,
     private val contentResolver: ContentResolver,
+    private val maxBytes: Long = FileStore.MAX_IMPORT_BYTES,
     private val inspector: PdfInspector,
 ) {
 
@@ -39,8 +44,12 @@ class PdfImporter(
         val folder = staging.newFolder()
         try {
             val pdf = File(folder, PDF_FILE)
-            withContext(Dispatchers.IO) {
-                open().use { input -> pdf.outputStream().use { input.copyTo(it) } }
+            try {
+                withContext(Dispatchers.IO) {
+                    open().use { input -> pdf.outputStream().use { input.copyToLimited(it, maxBytes) } }
+                }
+            } catch (e: FileTooLargeException) {
+                throw PdfOpenException(PdfProblem.TOO_LARGE, e)
             }
             val cover = File(folder, COVER_FILE)
             inspector.inspect(pdf, cover)?.let { throw PdfOpenException(it) }

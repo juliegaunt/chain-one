@@ -93,4 +93,5 @@ val BackupMessage.textRes: Int
         BackupMessage.NOT_A_BACKUP -> R.string.restore_not_a_backup
         BackupMessage.NEWER_VERSION -> R.string.restore_newer_version
         BackupMessage.DAMAGED -> R.string.restore_damaged
+        BackupMessage.NO_SPACE -> R.string.restore_no_space
     }

@@ -80,6 +80,19 @@ class PdfImporterTest {
     }
 
     @Test
+    fun aPdfOverTheSizeLimitIsRefused() = runTest {
+        val small = PdfImporter(staging, ApplicationProvider.getApplicationContext<Context>().contentResolver, maxBytes = 10) { _, _ -> null }
+
+        try {
+            small.stage("Huge.pdf", sourceUrl = "") { ByteArray(11).inputStream() }
+            fail("expected PdfOpenException")
+        } catch (e: PdfOpenException) {
+            assertEquals(PdfProblem.TOO_LARGE, e.problem)
+        }
+        assertTrue(stagingRoot.listFiles().isNullOrEmpty())
+    }
+
+    @Test
     fun importsAPickedFile() = runTest {
         val picked = tempFolder.newFile("Sunny_Tote.pdf").apply { writeText("%PDF tote") }
 

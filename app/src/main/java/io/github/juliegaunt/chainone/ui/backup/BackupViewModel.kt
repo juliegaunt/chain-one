@@ -34,7 +34,7 @@ sealed interface BackupPhase {
 enum class BackupTask { SAVING, READING, RESTORING }
 
 /** A one-off message for the snackbar once a task has finished. */
-enum class BackupMessage { SAVED, RESTORED, SAVE_FAILED, READ_FAILED, NOT_A_BACKUP, NEWER_VERSION, DAMAGED }
+enum class BackupMessage { SAVED, RESTORED, SAVE_FAILED, READ_FAILED, NOT_A_BACKUP, NEWER_VERSION, DAMAGED, NO_SPACE }
 
 data class BackupUiState(
     val phase: BackupPhase = BackupPhase.Idle,
@@ -131,6 +131,7 @@ class BackupViewModel(
             BackupProblem.NOT_A_BACKUP -> BackupMessage.NOT_A_BACKUP
             BackupProblem.NEWER_VERSION -> BackupMessage.NEWER_VERSION
             BackupProblem.DAMAGED -> BackupMessage.DAMAGED
+            BackupProblem.NO_SPACE -> BackupMessage.NO_SPACE
         }
 
     companion object {

@@ -23,6 +23,9 @@ enum class PdfProblem {
 
     /** Damaged, or not really a PDF. */
     UNREADABLE,
+
+    /** Over [io.github.juliegaunt.chainone.data.files.FileStore.MAX_IMPORT_BYTES]. */
+    TOO_LARGE,
 }
 
 class PdfOpenException(val problem: PdfProblem, cause: Throwable? = null) : IOException(problem.name, cause)

@@ -9,6 +9,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
+import java.io.OutputStream
 import java.util.UUID
 
 /**
@@ -22,17 +23,26 @@ class FileStore(
 
     fun resolve(relativePath: String): File = File(root, relativePath)
 
-    /** Copies [input] into the pattern's folder and returns the new file's relative path. */
+    /**
+     * Copies [input] into the pattern's folder and returns the new file's relative path. Throws
+     * [FileTooLargeException] past [limit] bytes, leaving nothing behind.
+     */
     suspend fun saveToPattern(
         patternId: Long,
         input: InputStream,
         baseName: String,
         extension: String,
+        limit: Long = MAX_IMPORT_BYTES,
     ): String = withContext(Dispatchers.IO) {
         val dir = patternDir(patternId).apply { mkdirs() }
         // A fresh name each time, so a replaced file never collides with (or is cached as) the old one.
         val file = File(dir, "$baseName-${UUID.randomUUID().toString().take(8)}.$extension")
-        input.use { source -> file.outputStream().use { source.copyTo(it) } }
+        try {
+            input.use { source -> file.outputStream().use { source.copyToLimited(it, limit) } }
+        } catch (e: IOException) {
+            file.delete()
+            throw e
+        }
         file.relativeTo(root).path
     }
 
@@ -84,10 +94,13 @@ class FileStore(
 
     private fun patternDir(patternId: Long) = File(root, "$PATTERNS_DIR/$patternId")
 
+    /** Plain letters and digits only, whatever the file's name or type claims. */
     private fun extensionFor(uri: Uri): String =
-        contentResolver.getType(uri)
-            ?.let { MimeTypeMap.getSingleton().getExtensionFromMimeType(it) }
-            ?: uri.lastPathSegment?.substringAfterLast('.', "")?.takeIf { it.length in 1..5 }
+        (
+            contentResolver.getType(uri)?.let { MimeTypeMap.getSingleton().getExtensionFromMimeType(it) }
+                ?: uri.lastPathSegment?.substringAfterLast('.', "")
+            )
+            ?.lowercase()?.takeIf { SAFE_EXTENSION.matches(it) }
             ?: "bin"
 
     /** The name a picked file goes by, such as "Granny Square.pdf", if the app it came from says. */
@@ -96,6 +109,26 @@ class FileStore(
     companion object {
         const val PATTERNS_DIR = "patterns"
         private const val SNAPSHOT_DIR = "snapshot"
+
+        /** The largest file (a PDF or photo) that can be added from the phone. */
+        const val MAX_IMPORT_BYTES = 200L * 1024 * 1024
+        private val SAFE_EXTENSION = Regex("[a-z0-9]{1,5}")
+    }
+}
+
+/** A file being copied in was larger than allowed. */
+class FileTooLargeException(limit: Long) : IOException("Larger than $limit bytes")
+
+/** Copies this stream to [out], throwing [FileTooLargeException] if it holds more than [limit] bytes. */
+fun InputStream.copyToLimited(out: OutputStream, limit: Long): Long {
+    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+    var copied = 0L
+    while (true) {
+        val read = read(buffer)
+        if (read < 0) return copied
+        copied += read
+        if (copied > limit) throw FileTooLargeException(limit)
+        out.write(buffer, 0, read)
     }
 }
 

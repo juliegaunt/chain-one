@@ -185,11 +185,37 @@ class BackupTest {
     fun aZipThatWritesOutsideItsFolderIsRefused() = runTest {
         val outside = File(tempFolder.root, "escaped.txt")
         val zip = zipOf(
-            LibraryBackup.MANIFEST to manifest(LibrarySnapshot(emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), emptyList())),
+            // Listed, so it's the path itself that's refused.
+            LibraryBackup.MANIFEST to manifest(emptyLibrary, files = mapOf("../../escaped.txt" to 6L)),
             "files/../../escaped.txt" to "gotcha".toByteArray(),
         )
         assertRefused(BackupProblem.DAMAGED, zip, inspectToo = false)
         assertFalse(outside.exists())
+    }
+
+    @Test
+    fun aFileTheBackupDoesNotListIsRefused() = runTest {
+        val zip = zipOf(
+            LibraryBackup.MANIFEST to manifest(emptyLibrary),
+            "files/patterns/1/extra.jpg" to "sneaked in".toByteArray(),
+        )
+        assertRefused(BackupProblem.DAMAGED, zip, inspectToo = false)
+    }
+
+    @Test
+    fun aFileBiggerThanListedIsRefused() = runTest {
+        // How a zip bomb would look: tiny on the list, huge when unpacked.
+        val zip = zipOf(
+            LibraryBackup.MANIFEST to manifest(emptyLibrary, files = mapOf("patterns/1/cover.jpg" to 10L)),
+            "files/patterns/1/cover.jpg" to ByteArray(100_000),
+        )
+        assertRefused(BackupProblem.DAMAGED, zip, inspectToo = false)
+    }
+
+    @Test
+    fun aBackupWithoutItsFileListIsRefused() = runTest {
+        val manifest = """{"format": "${BackupJson.FORMAT}", "version": ${BackupJson.VERSION}, "createdAt": 1}"""
+        assertRefused(BackupProblem.DAMAGED, zipOf(LibraryBackup.MANIFEST to manifest.toByteArray()))
     }
 
     @Test
@@ -229,8 +255,10 @@ class BackupTest {
         }
     }
 
-    private fun manifest(library: LibrarySnapshot): ByteArray =
-        BackupJson.write(BackupContents(1L, library, settings.snapshot()), "test").toByteArray()
+    private val emptyLibrary = LibrarySnapshot(emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), emptyList())
+
+    private fun manifest(library: LibrarySnapshot, files: Map<String, Long> = emptyMap()): ByteArray =
+        BackupJson.write(BackupContents(1L, library, settings.snapshot(), files), "test").toByteArray()
 
     private fun zipOf(vararg entries: Pair<String, ByteArray>): ByteArray {
         val out = ByteArrayOutputStream()

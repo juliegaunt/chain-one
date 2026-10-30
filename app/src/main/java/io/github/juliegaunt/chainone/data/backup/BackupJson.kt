@@ -21,10 +21,10 @@ data class BackupContents(
     val library: LibrarySnapshot,
     val settings: AppSettings.Snapshot,
     /**
-     * Every file under `files/` and its size, so a restore can tell a complete backup from one
-     * cut short. Null in backups made before this list was added; those aren't checked.
+     * Every file under `files/` and its size. A restore unpacks only these, no bigger, and checks
+     * they all arrived: that tells a complete backup from one cut short or tampered with.
      */
-    val files: Map<String, Long>? = null,
+    val files: Map<String, Long>,
 )
 
 /**
@@ -53,11 +53,7 @@ internal object BackupJson {
             .put("tags", JSONArray(library.tags.map { JSONObject().put("id", it.id).put("name", it.name) }))
             .put("patternTags", JSONArray(library.patternTags.map { JSONObject().put("patternId", it.patternId).put("tagId", it.tagId) }))
             .put("counters", JSONArray(library.counters.map(::counterJson)))
-            .apply {
-                contents.files?.let { files ->
-                    put("files", JSONArray(files.map { (path, size) -> JSONObject().put("path", path).put("size", size) }))
-                }
-            }
+            .put("files", JSONArray(contents.files.map { (path, size) -> JSONObject().put("path", path).put("size", size) }))
             .toString()
     }
 
@@ -85,7 +81,9 @@ internal object BackupJson {
                     counters = json.objects("counters").map(::readCounter),
                 ),
                 settings = readSettings(json.optJSONObject("settings") ?: JSONObject()),
-                files = if (json.has("files")) json.objects("files").associate { it.getString("path") to it.getLong("size") } else null,
+                files = json.getJSONArray("files").let { files ->
+                    List(files.length()) { files.getJSONObject(it) }.associate { it.getString("path") to it.getLong("size") }
+                },
             )
         } catch (e: JSONException) {
             throw BackupException(BackupProblem.DAMAGED, e)

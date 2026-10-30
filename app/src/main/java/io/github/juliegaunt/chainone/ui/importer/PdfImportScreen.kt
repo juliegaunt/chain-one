@@ -92,5 +92,6 @@ val PdfProblem?.messageRes: Int
     get() = when (this) {
         PdfProblem.PROTECTED -> R.string.pdf_error_protected
         PdfProblem.UNREADABLE -> R.string.pdf_error_unreadable
+        PdfProblem.TOO_LARGE -> R.string.pdf_error_too_large
         null -> R.string.pdf_error_copy
     }

@@ -16,6 +16,7 @@ Offline, ad-free Android app for storing crochet patterns (from URLs and PDFs) w
 - Always keep a pattern's original source URL
 - Every parsed field must be editable by hand
 - Counter changes save automatically
+- Untrusted input stays contained: files from other apps only as `content://` (`SharedItem`), the saved-page WebView loads only its own folder, only http(s) links open, copies in are capped (`FileStore.MAX_IMPORT_BYTES`, download limits in `PatternImporter`), and backups unpack only the files they list, no bigger than listed
 
 ## Features (see milestones)
 - Import from URL (paste screen + Android share sheet), with a readable-snapshot fallback when parsing is poor

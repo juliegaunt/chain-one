@@ -32,7 +32,7 @@ class AppContainer(context: Context) {
         appVersion = context.packageManager.getPackageInfo(context.packageName, 0).versionName.orEmpty(),
     )
     val importStaging = ImportStaging(File(context.cacheDir, "imports"))
-    val pdfImporter = PdfImporter(importStaging, context.contentResolver, RendererPdfInspector())
+    val pdfImporter = PdfImporter(importStaging, context.contentResolver, inspector = RendererPdfInspector())
     val patternImporter = PatternImporter(JsoupWebClient(), importStaging, pdfImporter) { host ->
         context.getString(R.string.snapshot_caption, host, DateFormat.getDateInstance(DateFormat.LONG).format(Date()))
     }

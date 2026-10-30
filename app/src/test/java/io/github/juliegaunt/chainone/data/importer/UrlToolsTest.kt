@@ -1,11 +1,22 @@
 package io.github.juliegaunt.chainone.data.importer
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class UrlToolsTest {
+
+    @Test
+    fun onlyWebAddressesCountAsLinks() {
+        assertTrue(UrlTools.isWebLink("https://example.com/hat"))
+        assertTrue(UrlTools.isWebLink(" HTTP://example.com "))
+        assertFalse(UrlTools.isWebLink("intent://scan/#Intent;scheme=zxing;end"))
+        assertFalse(UrlTools.isWebLink("file:///data/data/io.github.juliegaunt.chainone/databases/chain-one.db"))
+        assertFalse(UrlTools.isWebLink("javascript:alert(1)"))
+        assertFalse(UrlTools.isWebLink("my notes"))
+    }
 
     @Test
     fun extractsLinkFromSharedText() {
