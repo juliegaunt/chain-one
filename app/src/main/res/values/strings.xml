@@ -204,7 +204,6 @@
     <string name="pdf_marker_show">Show row marker</string>
     <string name="pdf_marker_hide">Hide row marker</string>
     <string name="pdf_marker_hint">Drag the bar onto the row you’re on, and its bottom tab to resize it. Long-press a row to move it there.</string>
-    <string name="pdf_marker_description">Row marker</string>
     <string name="pdf_marker_up">Move marker up a row</string>
     <string name="pdf_marker_down">Move marker down a row</string>
 

@@ -15,7 +15,7 @@ interface PatternDao {
 
     /** The library with filters applied; build [query] with [LibraryQuery]. */
     @RawQuery(observedEntities = [Pattern::class, PatternTag::class, Tag::class])
-    fun observeLibrary(query: SupportSQLiteQuery): Flow<List<Pattern>>
+    fun observeLibrary(query: SupportSQLiteQuery): Flow<List<PatternSummary>>
 
     @Query("SELECT COUNT(*) FROM patterns")
     fun observePatternCount(): Flow<Int>

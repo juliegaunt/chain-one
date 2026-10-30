@@ -93,6 +93,17 @@ interface CounterDao {
         return counter.value
     }
 
+    /**
+     * Adds [delta] to a counter (never below 0), remembering the old value for undo. Reading and
+     * writing in one transaction means quick taps can't both start from the same old value.
+     * Returns the counter as it was before, or null if nothing changed.
+     */
+    @Transaction
+    suspend fun changeBy(counterId: Long, delta: Int, now: Long, keepHistory: Int): Counter? {
+        val counter = getCounter(counterId) ?: return null
+        return counter.takeIf { change(counterId, counter.value + delta, now, keepHistory) != null }
+    }
+
     /** Takes back the pattern's most recent counter change, whichever counter it was on. */
     @Transaction
     suspend fun undo(patternId: Long, now: Long): Boolean {

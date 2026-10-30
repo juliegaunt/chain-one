@@ -299,7 +299,7 @@ private fun MenuItem(@StringRes label: Int, onClick: () -> Unit) {
 }
 
 /**
- * The slim counter along the bottom of the Instructions and Web page tabs, for counting while
+ * The slim counter along the bottom of the Instructions, Web page and PDF tabs, for counting while
  * reading. Works before any counter exists: the first tap of + creates "Row".
  */
 @Composable

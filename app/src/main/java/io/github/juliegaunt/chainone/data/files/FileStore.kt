@@ -37,13 +37,12 @@ class FileStore(
     }
 
     /** Copies a file the user picked (a content:// URI) into the pattern's folder. */
-    suspend fun importToPattern(patternId: Long, uri: Uri, baseName: String, extension: String = extensionFor(uri)): String {
-        return withContext(Dispatchers.IO) {
+    suspend fun importToPattern(patternId: Long, uri: Uri, baseName: String, extension: String = extensionFor(uri)): String =
+        withContext(Dispatchers.IO) {
             contentResolver.openInputStream(uri)?.use { input ->
                 saveToPattern(patternId, input, baseName, extension)
             } ?: throw IOException("Could not open $uri")
         }
-    }
 
     /**
      * Moves a file that's already on the phone (such as a downloaded photo) into the pattern's

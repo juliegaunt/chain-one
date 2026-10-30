@@ -16,6 +16,19 @@ data class LibraryFilter(
         get() = search.isNotBlank() || statuses.isNotEmpty() || tagIds.isNotEmpty() || favoritesOnly
 }
 
+/**
+ * The parts of a pattern a library card shows. The library loads just these, not every pattern's
+ * full instructions, materials and notes.
+ */
+data class PatternSummary(
+    val id: Long,
+    val title: String,
+    val designer: String,
+    val status: PatternStatus,
+    val isFavorite: Boolean,
+    val coverImagePath: String?,
+)
+
 /** A tag and how many patterns carry it. */
 data class TagCount(val id: Long, val name: String, val patternCount: Int)
 
@@ -24,6 +37,9 @@ data class TagCount(val id: Long, val name: String, val patternCount: Int)
  * words match ("gran" finds "granny"); SQLite's LIKE ignores case for English letters.
  */
 internal object LibraryQuery {
+
+    private const val SUMMARY_COLUMNS = "p.id, p.title, p.designer, p.status, p.isFavorite, p.coverImagePath"
+    private val SPACES = Regex("""\s+""")
 
     private val SEARCHED_COLUMNS = listOf("title", "designer", "hookSize", "yarnWeight", "materials", "instructions", "notes")
 
@@ -53,10 +69,10 @@ internal object LibraryQuery {
         }
 
         val where = if (conditions.isEmpty()) "" else " WHERE " + conditions.joinToString(" AND ")
-        return SimpleSQLiteQuery("SELECT p.* FROM patterns p$where ORDER BY p.updatedAt DESC, p.id DESC", args.toTypedArray())
+        return SimpleSQLiteQuery("SELECT $SUMMARY_COLUMNS FROM patterns p$where ORDER BY p.updatedAt DESC, p.id DESC", args.toTypedArray())
     }
 
-    fun words(search: String): List<String> = search.trim().split(Regex("""\s+""")).filter { it.isNotEmpty() }
+    fun words(search: String): List<String> = search.trim().split(SPACES).filter { it.isNotEmpty() }
 
     /** So a search for "100%" or "sc_2" looks for those characters, not LIKE's wildcards. */
     fun escapeLike(text: String): String = text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")

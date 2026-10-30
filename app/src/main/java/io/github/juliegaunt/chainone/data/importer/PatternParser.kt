@@ -71,6 +71,8 @@ object PatternParser {
     )
     private val TITLE_SEPARATORS = listOf(" | ", " - ", " – ", " — ", " · ", " :: ")
     private val PREFIX_SEPARATORS = listOf(": ", " | ", " - ", " – ", " — ", " · ")
+    private val SRCSET_SEPARATOR = Regex(""",\s+""")
+    private val SPACES = Regex("""\s+""")
     private const val MAX_SECTION_HEADING = 60
     private const val MAX_KEPT_VALUE = 40
 
@@ -265,8 +267,8 @@ object PatternParser {
     /** Picks the largest image up to 1600 px wide from a `srcset` list. */
     private fun bestFromSrcset(srcset: String): String {
         if (srcset.isBlank()) return ""
-        val entries = srcset.split(Regex(""",\s+""")).mapNotNull { entry ->
-            val parts = entry.trim().split(Regex("""\s+"""))
+        val entries = srcset.split(SRCSET_SEPARATOR).mapNotNull { entry ->
+            val parts = entry.trim().split(SPACES)
             val url = parts.firstOrNull()?.ifBlank { null } ?: return@mapNotNull null
             val width = parts.getOrNull(1)?.removeSuffix("w")?.toIntOrNull() ?: 0
             url to width

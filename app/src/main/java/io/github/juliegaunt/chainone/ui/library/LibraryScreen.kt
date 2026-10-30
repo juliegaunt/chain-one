@@ -98,7 +98,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.juliegaunt.chainone.R
 import io.github.juliegaunt.chainone.data.db.LibraryFilter
-import io.github.juliegaunt.chainone.data.db.Pattern
+import io.github.juliegaunt.chainone.data.db.PatternSummary
 import io.github.juliegaunt.chainone.data.db.PatternStatus
 import io.github.juliegaunt.chainone.data.db.TagCount
 import io.github.juliegaunt.chainone.data.settings.LibraryLayout
@@ -377,7 +377,7 @@ private fun EmptyMessage(text: String, modifier: Modifier = Modifier, action: @C
     }
 }
 
-/** The search box that replaces the logo while searching. It opens with the keyboard up. */
+/** The search box that replaces the logo while searching. With [focus], it opens with the keyboard up. */
 @Composable
 private fun SearchField(text: String, onChange: (String) -> Unit, focus: Boolean) {
     val focusRequester = remember { FocusRequester() }
@@ -586,7 +586,7 @@ private fun RenameTagDialog(tag: TagCount, onRename: (String) -> Unit, onDismiss
 private fun PatternGrid(
     items: List<LibraryItem>,
     onOpen: (Long) -> Unit,
-    onToggleFavorite: (Pattern) -> Unit,
+    onToggleFavorite: (PatternSummary) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyVerticalGrid(
@@ -643,7 +643,7 @@ private fun PatternGrid(
 private fun PatternList(
     items: List<LibraryItem>,
     onOpen: (Long) -> Unit,
-    onToggleFavorite: (Pattern) -> Unit,
+    onToggleFavorite: (PatternSummary) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(modifier = modifier, contentPadding = PaddingValues(bottom = ListBottomPadding)) {
@@ -676,7 +676,7 @@ private fun PatternList(
 }
 
 @Composable
-private fun FavoriteButton(pattern: Pattern, onToggle: (Pattern) -> Unit, modifier: Modifier = Modifier) {
+private fun FavoriteButton(pattern: PatternSummary, onToggle: (PatternSummary) -> Unit, modifier: Modifier = Modifier) {
     IconToggleButton(
         checked = pattern.isFavorite,
         onCheckedChange = { onToggle(pattern) },

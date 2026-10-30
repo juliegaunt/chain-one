@@ -35,6 +35,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -260,7 +261,9 @@ private fun PdfPagesView(
         saveMarker(moved)
     }
 
-    val pageDescription = stringResource(R.string.pdf_page_description, viewport.currentPage + 1, pages.pageCount)
+    // Read through derivedStateOf so scrolling recomposes only when the page number changes.
+    val currentPage by remember(viewport) { derivedStateOf { viewport.currentPage } }
+    val pageDescription = stringResource(R.string.pdf_page_description, currentPage + 1, pages.pageCount)
     val markerColor = MaterialTheme.colorScheme.primary
     Box(
         Modifier
@@ -431,7 +434,7 @@ private fun PdfPagesView(
                 .padding(8.dp),
         ) {
             Text(
-                stringResource(R.string.pdf_page_of, viewport.currentPage + 1, pages.pageCount),
+                stringResource(R.string.pdf_page_of, currentPage + 1, pages.pageCount),
                 style = MaterialTheme.typography.labelMedium,
                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
             )
@@ -500,9 +503,13 @@ private class PdfViewport(private val pageSizes: List<PageSize>, private val gap
 
     fun pageHeight(page: Int): Float = heights[page] * scale
 
-    /** The page at the top quarter of the screen, which is where people read. */
+    /**
+     * The page at the top quarter of the screen, which is where people read. It checks [width]
+     * (state) rather than the page tops (not state), so a derivedStateOf of it updates once the
+     * viewer has been measured.
+     */
     val currentPage: Int
-        get() = if (tops.isEmpty()) initialPage else pageAtContentY((y + height / 4) / scale)
+        get() = if (width <= 0f) initialPage else pageAtContentY((y + height / 4) / scale)
 
     fun setSize(newWidth: Float, newHeight: Float) {
         if (newWidth == width && newHeight == height) return

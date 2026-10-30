@@ -109,9 +109,8 @@ class CounterRepository(
     }
 
     private suspend fun changeBy(counterId: Long, delta: Int) {
-        val counter = dao.getCounter(counterId) ?: return
-        val changed = dao.change(counterId, counter.value + delta, clock(), KEEP_HISTORY) != null
-        if (changed && delta > 0) markStarted(counter.patternId)
+        val counter = dao.changeBy(counterId, delta, clock(), KEEP_HISTORY) ?: return
+        if (delta > 0) markStarted(counter.patternId)
     }
 
     /** Counting on a "Want to make" pattern means it's been started. */
@@ -120,9 +119,11 @@ class CounterRepository(
         if (pattern.status == PatternStatus.WANT_TO_MAKE) patternDao.setStatus(patternId, PatternStatus.IN_PROGRESS, clock())
     }
 
-    private fun cleanName(name: String) = name.trim().replace(Regex("""\s+"""), " ").take(MAX_NAME_LENGTH).ifEmpty { DEFAULT_NAME }
+    private fun cleanName(name: String) = name.trim().replace(SPACES, " ").take(MAX_NAME_LENGTH).ifEmpty { DEFAULT_NAME }
 
     private companion object {
+        val SPACES = Regex("""\s+""")
+
         /** Undo steps kept per pattern; older ones are dropped. */
         const val KEEP_HISTORY = 200
         const val MAX_NAME_LENGTH = 30

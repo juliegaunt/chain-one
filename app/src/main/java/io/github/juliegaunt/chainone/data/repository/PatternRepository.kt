@@ -8,6 +8,7 @@ import io.github.juliegaunt.chainone.data.db.PatternAttachment
 import io.github.juliegaunt.chainone.data.db.PatternDao
 import io.github.juliegaunt.chainone.data.db.PatternImage
 import io.github.juliegaunt.chainone.data.db.PatternStatus
+import io.github.juliegaunt.chainone.data.db.PatternSummary
 import io.github.juliegaunt.chainone.data.db.RowMarker
 import io.github.juliegaunt.chainone.data.db.SourceType
 import io.github.juliegaunt.chainone.data.db.Tag
@@ -41,7 +42,7 @@ class PatternRepository(
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
 
-    fun observeLibrary(filter: LibraryFilter): Flow<List<Pattern>> = dao.observeLibrary(LibraryQuery.build(filter))
+    fun observeLibrary(filter: LibraryFilter): Flow<List<PatternSummary>> = dao.observeLibrary(LibraryQuery.build(filter))
 
     fun observePatternCount(): Flow<Int> = dao.observePatternCount()
 
@@ -195,10 +196,11 @@ class PatternRepository(
         const val PDF_EXTENSION = "pdf"
         const val MAX_TAG_LENGTH = 40
         const val MAX_PDF_NAME_LENGTH = 120
+        val SPACES = Regex("""\s+""")
 
-        fun cleanPdfName(name: String): String = name.trim().replace(Regex("""\s+"""), " ").take(MAX_PDF_NAME_LENGTH).trim()
+        fun cleanPdfName(name: String): String = name.trim().replace(SPACES, " ").take(MAX_PDF_NAME_LENGTH).trim()
 
-        fun cleanTag(name: String): String = name.trim().replace(Regex("""\s+"""), " ").take(MAX_TAG_LENGTH).trim()
+        fun cleanTag(name: String): String = name.trim().replace(SPACES, " ").take(MAX_TAG_LENGTH).trim()
 
         /** Trimmed, without blanks, and without the same tag twice in different case. */
         fun cleanTags(names: List<String>): List<String> =

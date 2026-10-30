@@ -44,6 +44,9 @@ internal object PageContent {
     )
     private val HEADING_TAGS = setOf("h1", "h2", "h3", "h4", "h5", "h6")
 
+    /** Runs of spaces, tabs and non-breaking spaces, which become one space. */
+    private val SPACES = Regex("""[ \t ]+""")
+
     /**
      * The page's main content as a cleaned copy (the page itself is left untouched), or null.
      * The usual article containers are tried most specific first, but one made mostly of links
@@ -106,7 +109,7 @@ internal object PageContent {
 
         fun flush() {
             current.toString().lineSequence()
-                .map { it.replace(Regex("""[ \t ]+"""), " ").trim() }
+                .map { it.replace(SPACES, " ").trim() }
                 .filter { it.isNotEmpty() }
                 .forEach { lines += it }
             current.clear()

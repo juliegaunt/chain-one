@@ -6,7 +6,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.juliegaunt.chainone.appContainer
 import io.github.juliegaunt.chainone.data.db.LibraryFilter
-import io.github.juliegaunt.chainone.data.db.Pattern
+import io.github.juliegaunt.chainone.data.db.PatternSummary
 import io.github.juliegaunt.chainone.data.db.PatternStatus
 import io.github.juliegaunt.chainone.data.db.TagCount
 import io.github.juliegaunt.chainone.data.files.FileStore
@@ -25,7 +25,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.File
 
-data class LibraryItem(val pattern: Pattern, val cover: File?)
+data class LibraryItem(val pattern: PatternSummary, val cover: File?)
 
 data class LibraryUiState(
     val items: List<LibraryItem> = emptyList(),
@@ -142,7 +142,7 @@ class LibraryViewModel(
         )
     }
 
-    fun toggleFavorite(pattern: Pattern) {
+    fun toggleFavorite(pattern: PatternSummary) {
         viewModelScope.launch { repository.setFavorite(pattern.id, !pattern.isFavorite) }
     }
 

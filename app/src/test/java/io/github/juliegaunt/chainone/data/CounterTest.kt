@@ -11,8 +11,12 @@ import io.github.juliegaunt.chainone.data.repository.PatternDraft
 import io.github.juliegaunt.chainone.data.repository.PatternRepository
 import io.github.juliegaunt.chainone.data.repository.RepeatProgress
 import io.github.juliegaunt.chainone.data.repository.repeatProgress
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -64,6 +68,18 @@ class CounterTest {
 
         repeat(5) { counters.decrement(row) }
         assertEquals(0, value(row))
+    }
+
+    @Test
+    fun tapsInQuickSuccessionAreAllCounted() = runTest {
+        val row = counters.add(patternId, "Row")
+
+        // Like fast taps or volume-button presses: each starts before the last has saved.
+        withContext(Dispatchers.Default) {
+            List(25) { async { counters.increment(row) } }.awaitAll()
+        }
+
+        assertEquals(25, value(row))
     }
 
     @Test

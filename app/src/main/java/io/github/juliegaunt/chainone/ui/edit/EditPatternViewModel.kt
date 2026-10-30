@@ -147,6 +147,8 @@ data class EditPatternUiState(
     }
 }
 
+private val SPACES = Regex("""\s+""")
+
 class EditPatternViewModel(
     savedStateHandle: SavedStateHandle,
     private val repository: PatternRepository,
@@ -223,7 +225,7 @@ class EditPatternViewModel(
 
     /** Adds a tag, using an existing tag's spelling if one matches regardless of case. */
     fun addTag(name: String) {
-        val clean = name.trim().replace(Regex("""\s+"""), " ")
+        val clean = name.trim().replace(SPACES, " ")
         _uiState.update { state ->
             if (clean.isEmpty()) return@update state.copy(tagInput = "")
             val spelling = state.allTags.firstOrNull { it.equals(clean, ignoreCase = true) } ?: clean

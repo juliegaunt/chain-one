@@ -47,6 +47,10 @@ object CraftDetails {
     )
     private val CATEGORY_WORD = Regex("""\b(super\s+fine|fine|light|medium)\s+weight\b""", RegexOption.IGNORE_CASE)
     private val YARN_WORD = Regex("""\b(yarn|weight)\b""", RegexOption.IGNORE_CASE)
+    private val SPACES = Regex("""\s+""")
+
+    /** Where one sentence ends and the next begins, for text that runs several onto one line. */
+    private val SENTENCE_END = Regex("""(?<=[.!?])\s+(?=[A-Z])""")
 
     /**
      * The hook size from the first line of [text] that mentions a hook, such as "5 mm (H-8)".
@@ -92,13 +96,13 @@ object CraftDetails {
     /** Reads a yarn weight from a value that is already known to be one, e.g. a "Yarn weight" field. */
     fun yarnWeightIn(value: String): String {
         val name = WEIGHT_NAME.find(value)?.groupValues?.get(1)?.let { found ->
-            val key = found.lowercase().replace(Regex("""\s+"""), " ")
+            val key = found.lowercase().replace(SPACES, " ")
             WEIGHT_NAMES.first { it.first == key }.second
         }
         val number = WEIGHT_NUMBER.find(value)?.groupValues?.drop(1)?.firstOrNull { it.isNotEmpty() }?.toInt()
         val category = number?.let { CATEGORY_NAMES[it] }
             ?: CATEGORY_WORD.find(value)?.groupValues?.get(1)?.let { word ->
-                CATEGORY_NAMES.first { it.equals(word.replace(Regex("""\s+"""), " "), ignoreCase = true) }
+                CATEGORY_NAMES.first { it.equals(word.replace(SPACES, " "), ignoreCase = true) }
             }
         return when {
             name != null && number != null -> "$name (#$number)"
@@ -110,5 +114,5 @@ object CraftDetails {
     }
 
     private fun linesOf(text: String): Sequence<String> =
-        text.lineSequence().flatMap { it.split(Regex("""(?<=[.!?])\s+(?=[A-Z])""")) }.filter { it.isNotBlank() }
+        text.lineSequence().flatMap { it.split(SENTENCE_END) }.filter { it.isNotBlank() }
 }
