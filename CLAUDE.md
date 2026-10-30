@@ -67,4 +67,5 @@ Offline, ad-free Android app for storing crochet patterns (from URLs and PDFs) w
 - Milestone 4 done (counter; schema v2 for repeat counters)
 - Milestone 5 done (row highlighting; schema v3 for `counters.rowSection`)
 - Milestone 6 done (PDF import, viewer, row marker; schema v4). Links to PDFs on the web import screen import the PDF
-- Milestone 7 done (backup/restore). All planned milestones are done. Possible later: row highlighting on the Web page tab (would need scripts enabled for the app's own code only); copying a PDF's text into Instructions (Android 15+ only)
+- Milestone 7 done (backup/restore). All planned milestones are done
+- Next: the first public release (signed release build tested with R8 on, version 1.0.0, publishing). Possible later: row highlighting on the Web page tab (would need scripts enabled for the app's own code only); copying a PDF's text into Instructions (Android 15+ only)
