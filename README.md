@@ -115,3 +115,8 @@ GNU General Public License as published by the Free Software Foundation, either 
 License, or (at your option) any later version. It is distributed in the hope that it will be
 useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE. See the [full license](LICENSE) for details.
+
+Parts that come from elsewhere keep their own licenses:
+
+- Some icons are from Google's [Material Symbols](https://fonts.google.com/icons) (Apache License 2.0).
+- The "Chain One" lettering on the launch screen is drawn from the [Noto Sans](https://fonts.google.com/noto/specimen/Noto+Sans) font (SIL Open Font License 1.1).
