@@ -9,6 +9,7 @@ import io.github.juliegaunt.chainone.data.importer.JsoupWebClient
 import io.github.juliegaunt.chainone.data.importer.PatternImporter
 import io.github.juliegaunt.chainone.data.importer.PdfImporter
 import io.github.juliegaunt.chainone.data.pdf.RendererPdfInspector
+import io.github.juliegaunt.chainone.data.repository.CategoryRepository
 import io.github.juliegaunt.chainone.data.repository.CounterRepository
 import io.github.juliegaunt.chainone.data.repository.PatternRepository
 import io.github.juliegaunt.chainone.data.repository.PdfRepository
@@ -25,6 +26,7 @@ class AppContainer(context: Context) {
     val fileStore = FileStore(context.filesDir, context.contentResolver)
     val patternRepository = PatternRepository(database.patternDao(), fileStore)
     val pdfRepository = PdfRepository(database.pdfDao(), fileStore)
+    val categoryRepository = CategoryRepository(database.categoryDao())
     val counterRepository = CounterRepository(database.counterDao(), database.patternDao())
     val settings = AppSettings(context)
     val libraryBackup = LibraryBackup(

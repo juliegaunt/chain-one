@@ -17,9 +17,13 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -28,6 +32,7 @@ import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
@@ -35,6 +40,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -48,6 +54,8 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.juliegaunt.chainone.R
+import io.github.juliegaunt.chainone.data.category.CategoryMatcher
+import io.github.juliegaunt.chainone.data.db.Category
 import io.github.juliegaunt.chainone.ui.components.PatternCover
 import io.github.juliegaunt.chainone.ui.components.RenameDialog
 
@@ -228,6 +236,52 @@ fun TagsField(
                     SuggestionChip(onClick = { onAdd(tag) }, label = { Text(tag) })
                 }
             }
+        }
+    }
+}
+
+/**
+ * The pattern's category: "Automatic (Hats)", worked out from the title as it's typed, or one
+ * picked by hand from the menu.
+ */
+@Composable
+fun CategoryPicker(title: String, chosenId: Long?, categories: List<Category>, onChoose: (Long?) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    val fromTitle = CategoryMatcher.categoryFor(title, null, categories)?.name ?: stringResource(R.string.library_other)
+    val automatic = stringResource(R.string.category_automatic, fromTitle)
+    val chosen = categories.firstOrNull { it.id == chosenId }
+    val choose = { id: Long? ->
+        expanded = false
+        onChoose(id)
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(stringResource(R.string.field_category), style = MaterialTheme.typography.labelLarge)
+        Box {
+            OutlinedButton(onClick = { expanded = true }) {
+                Text(chosen?.name ?: automatic)
+                Icon(Icons.Filled.ArrowDropDown, contentDescription = null)
+            }
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                DropdownMenuItem(
+                    text = { Text(automatic) },
+                    trailingIcon = if (chosen == null) ({ Icon(Icons.Filled.Check, contentDescription = null) }) else null,
+                    onClick = { choose(null) },
+                )
+                categories.forEach { category ->
+                    DropdownMenuItem(
+                        text = { Text(category.name) },
+                        trailingIcon = if (category.id == chosenId) ({ Icon(Icons.Filled.Check, contentDescription = null) }) else null,
+                        onClick = { choose(category.id) },
+                    )
+                }
+            }
+        }
+        if (chosen == null) {
+            Text(
+                stringResource(R.string.category_automatic_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

@@ -16,6 +16,7 @@ A personal crochet pattern library for Android, with a built-in row counter.
 | Add and edit patterns by hand | ✅ |
 | Import from a web page (paste a link or share from the browser), with an offline copy of the page | ✅ |
 | Search, tags, status filters | ✅ |
+| Categories: the library in foldable sections, sorted by the words in each title | ✅ |
 | Row/stitch counters inside each pattern (repeat counters, undo, volume-button counting) | ✅ |
 | The instructions highlight the row the counter is on (tap a row to jump there) | ✅ |
 | Import and view PDFs, with a movable row marker | ✅ |
@@ -87,6 +88,12 @@ Tap **Add pattern → From a website** and paste a link, or in your phone's brow
 Some pages don't contain the pattern itself: video-only tutorials, directory sites that link to the designer's blog, and Ravelry listings for paid or off-site patterns. Chain One then says it couldn't find the instructions, and you still get the page copy.
 
 **Trying the share button on the emulator:** open Chrome on the emulator, go to a pattern page, tap **⋮ → Share…** and choose **Chain One**. The first time, Chain One may be under **More** in the share sheet.
+
+## Categories
+
+Tap **⋮ → Categories** to divide the library into sections such as Hats, Bags and Blankets. Each pattern goes into the category for the **main item in its title**: the item named first, before words like *with*, *and* or *bonus*, so "Daisy Cardigan Bonus Beanie" is a cardigan and "Bunny Ears Hat" is a hat. Chain One knows common words for many items, so a Hats category also takes "Cozy Cap" and "Slouchy Beanie" (but not "Chat Bag"). You can give a category **extra words** of your own too. Patterns whose main item has no category go under **Other**, and new imports sort themselves.
+
+Chain One also suggests categories from words several of your titles share. On a pattern's edit screen you can put it in a category yourself, whatever its title says. In the library, tap a section's header to fold it away; search and filters work across all sections.
 
 ## PDF patterns
 

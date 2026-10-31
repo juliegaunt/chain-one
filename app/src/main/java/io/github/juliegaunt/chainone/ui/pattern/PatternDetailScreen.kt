@@ -68,6 +68,7 @@ fun PatternDetailScreen(
     onBack: () -> Unit,
     onEdit: (Long) -> Unit,
     onShowTag: (Long) -> Unit,
+    onShowSection: (String) -> Unit,
     viewModel: PatternDetailViewModel = viewModel(factory = PatternDetailViewModel.Factory),
     counterViewModel: CounterViewModel = viewModel(factory = CounterViewModel.Factory),
 ) {
@@ -185,8 +186,11 @@ fun PatternDetailScreen(
                             pattern = pattern,
                             cover = state.cover,
                             tags = state.tags,
+                            category = state.category,
+                            hasCategories = state.hasCategories,
                             onStatusChange = viewModel::setStatus,
                             onShowTag = onShowTag,
+                            onShowSection = onShowSection,
                         )
                         DetailTab.INSTRUCTIONS, DetailTab.WEB_PAGE, DetailTab.PDF -> Column(Modifier.fillMaxSize()) {
                             when (currentTab) {

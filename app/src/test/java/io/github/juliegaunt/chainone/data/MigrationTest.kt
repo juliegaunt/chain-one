@@ -12,6 +12,7 @@ import kotlinx.coroutines.test.runTest
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -83,6 +84,9 @@ class MigrationTest {
             assertEquals("Blanket", pdf.displayName)
             assertEquals(4, pdf.lastPage)
             assertNull(pdf.rowMarker)
+
+            assertNull(pattern.categoryId)
+            assertTrue(db.categoryDao().getAll().isEmpty())
         } finally {
             db.close()
             context.deleteDatabase(name)

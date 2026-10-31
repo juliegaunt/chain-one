@@ -7,12 +7,15 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.juliegaunt.chainone.appContainer
+import io.github.juliegaunt.chainone.data.category.CategoryMatcher
+import io.github.juliegaunt.chainone.data.db.Category
 import io.github.juliegaunt.chainone.data.db.Pattern
 import io.github.juliegaunt.chainone.data.db.PatternAttachment
 import io.github.juliegaunt.chainone.data.db.PatternStatus
 import io.github.juliegaunt.chainone.data.db.RowMarker
 import io.github.juliegaunt.chainone.data.db.Tag
 import io.github.juliegaunt.chainone.data.files.FileStore
+import io.github.juliegaunt.chainone.data.repository.CategoryRepository
 import io.github.juliegaunt.chainone.data.repository.PatternRepository
 import io.github.juliegaunt.chainone.data.repository.PdfRepository
 import io.github.juliegaunt.chainone.ui.components.coverFile
@@ -32,6 +35,10 @@ data class PatternDetailUiState(
     /** The saved copy of the pattern's web page, if it was imported from one. */
     val savedPage: File? = null,
     val pdfs: List<PatternAttachment> = emptyList(),
+    /** The library section the pattern is in; null is "Other". */
+    val category: Category? = null,
+    /** False until the first category is made; the pattern page then doesn't mention categories. */
+    val hasCategories: Boolean = false,
     val isLoading: Boolean = true,
     /** Set once the pattern has been deleted, so the screen can close itself. */
     val isDeleted: Boolean = false,
@@ -42,6 +49,7 @@ class PatternDetailViewModel(
     savedStateHandle: SavedStateHandle,
     private val repository: PatternRepository,
     private val pdfRepository: PdfRepository,
+    categoryRepository: CategoryRepository,
     private val fileStore: FileStore,
 ) : ViewModel() {
 
@@ -52,14 +60,17 @@ class PatternDetailViewModel(
         repository.observePattern(patternId),
         repository.observeTagsFor(patternId),
         pdfRepository.observePdfs(patternId),
+        categoryRepository.observeCategories(),
         isDeleted,
-    ) { pattern, tags, pdfs, deleted ->
+    ) { pattern, tags, pdfs, categories, deleted ->
         PatternDetailUiState(
             pattern = pattern,
             cover = fileStore.coverFile(pattern?.coverImagePath),
             tags = tags,
             savedPage = pattern?.snapshotPath?.let(fileStore::resolve),
             pdfs = pdfs,
+            category = pattern?.let { CategoryMatcher.categoryFor(it.title, it.categoryId, categories) },
+            hasCategories = categories.isNotEmpty(),
             isLoading = false,
             isDeleted = deleted,
         )
@@ -99,7 +110,7 @@ class PatternDetailViewModel(
         val Factory = viewModelFactory {
             initializer {
                 val container = appContainer
-                PatternDetailViewModel(createSavedStateHandle(), container.patternRepository, container.pdfRepository, container.fileStore)
+                PatternDetailViewModel(createSavedStateHandle(), container.patternRepository, container.pdfRepository, container.categoryRepository, container.fileStore)
             }
         }
     }

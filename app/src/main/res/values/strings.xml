@@ -17,6 +17,8 @@
     <string name="action_rename">Rename</string>
     <string name="action_clear">Clear</string>
     <string name="action_done">Done</string>
+    <string name="action_move_up">Move up</string>
+    <string name="action_move_down">Move down</string>
 
     <!-- Status -->
     <string name="status_want_to_make">Want to make</string>
@@ -55,12 +57,51 @@
     <string name="library_close_search">Close search</string>
     <string name="library_clear_search">Clear search</string>
     <string name="library_no_matches">No patterns match.</string>
+    <!-- The library section for patterns in no category. -->
+    <string name="library_other">Other</string>
+    <string name="library_expand">Show</string>
+    <string name="library_collapse">Hide</string>
     <string name="library_clear_filters">Clear filters</string>
     <string name="library_filter_tags">Tags</string>
     <plurals name="library_tags_selected">
         <item quantity="one">%d tag</item>
         <item quantity="other">%d tags</item>
     </plurals>
+
+    <!-- Categories -->
+    <string name="categories_title">Categories</string>
+    <string name="categories_hint">Each pattern goes into the category for the main item in its title: the item named first, before words like “with”, “and” or “bonus”. Chain One knows common words for many items, so a Hats category takes beanies, caps and berets too. Anything else goes under Other, and you can choose a pattern’s category yourself on its edit screen.</string>
+    <string name="categories_suggested">Suggested from your titles</string>
+    <!-- %1$s is a word such as "Hats", %2$d how many titles have it. -->
+    <string name="categories_suggestion">%1$s · %2$d</string>
+    <string name="categories_add">Add category</string>
+    <string name="categories_edit">Edit category</string>
+    <string name="categories_name">Name</string>
+    <string name="categories_name_hint">e.g. Hats</string>
+    <string name="categories_name_taken">There’s already a category with this name</string>
+    <string name="categories_also_matches">Also matches</string>
+    <string name="categories_also_matches_hint">e.g. beanie, beret</string>
+    <string name="categories_also_matches_help">Other words for the same kind of item, separated by commas. Common ones (beanie and cap for hats, say) are already known.</string>
+    <string name="categories_also_matches_list">Also: %1$s</string>
+    <plurals name="categories_matches">
+        <item quantity="one">%d title matches</item>
+        <item quantity="other">%d titles match</item>
+    </plurals>
+    <plurals name="categories_pattern_count">
+        <item quantity="one">%d pattern</item>
+        <item quantity="other">%d patterns</item>
+    </plurals>
+    <plurals name="categories_other_count">
+        <item quantity="one">%d pattern in no category</item>
+        <item quantity="other">%d patterns in no category</item>
+    </plurals>
+    <string name="categories_options">Options for %1$s</string>
+    <string name="categories_delete_title">Delete “%1$s”?</string>
+    <string name="categories_delete_message">Its patterns aren’t deleted: they move to whichever other category fits their titles, or to Other.</string>
+    <string name="field_category">Category</string>
+    <!-- %1$s is the category the title would put the pattern in, or "Other". -->
+    <string name="category_automatic">Automatic (%1$s)</string>
+    <string name="category_automatic_hint">Chosen from the title. Pick one to put this pattern there yourself.</string>
 
     <!-- Tags -->
     <string name="tags_sheet_title">Filter by tags</string>
@@ -161,10 +202,7 @@
     <string name="counter_open">Open the Counter tab</string>
     <string name="counter_options">Options for %1$s</string>
     <string name="counter_set_number">Set number</string>
-    <string name="counter_edit">Edit</string>
     <string name="counter_reset">Reset to 0</string>
-    <string name="counter_move_up">Move up</string>
-    <string name="counter_move_down">Move down</string>
     <string name="counter_add">Add counter</string>
     <string name="counter_new_title">New counter</string>
     <string name="counter_edit_title">Edit counter</string>

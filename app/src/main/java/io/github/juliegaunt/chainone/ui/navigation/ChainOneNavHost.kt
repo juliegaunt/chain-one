@@ -10,6 +10,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import io.github.juliegaunt.chainone.ui.categories.CategoriesScreen
 import io.github.juliegaunt.chainone.ui.edit.EditPatternScreen
 import io.github.juliegaunt.chainone.ui.importer.ImportScreen
 import io.github.juliegaunt.chainone.ui.importer.PdfImportScreen
@@ -23,6 +24,7 @@ object Routes {
     const val EDIT = "edit?$ARG_PATTERN_ID={$ARG_PATTERN_ID}&$ARG_IMPORT_ID={$ARG_IMPORT_ID}"
     const val IMPORT = "import?$ARG_SHARED_TEXT={$ARG_SHARED_TEXT}"
     const val IMPORT_PDF = "import-pdf?$ARG_PDF_URI={$ARG_PDF_URI}"
+    const val CATEGORIES = "categories"
 
     fun pattern(id: Long) = "pattern/$id"
     fun edit(id: Long? = null) = if (id == null) "edit" else "edit?$ARG_PATTERN_ID=$id"
@@ -43,6 +45,9 @@ const val ARG_PDF_URI = "pdfUri"
 
 /** Set on the library's saved state to show only the patterns with this tag id. */
 const val KEY_SHOW_TAG = "showTag"
+
+/** Set on the library's saved state to open and scroll to this section (see `LibraryViewModel.sectionKey`). */
+const val KEY_SHOW_SECTION = "showSection"
 
 /** Used in the edit route when creating a new pattern. */
 const val NEW_PATTERN_ID = -1L
@@ -66,16 +71,24 @@ fun ChainOneNavHost(shared: SharedItem? = null, onShareHandled: () -> Unit = {})
 
     NavHost(navController = navController, startDestination = Routes.LIBRARY) {
         composable(Routes.LIBRARY) { entry ->
-            // Set by a pattern's page when one of its tags is tapped.
+            // Set by a pattern's page when one of its tags, or its category, is tapped.
             val showTag by entry.savedStateHandle.getStateFlow<Long?>(KEY_SHOW_TAG, null).collectAsState()
+            val showSection by entry.savedStateHandle.getStateFlow<String?>(KEY_SHOW_SECTION, null).collectAsState()
             LibraryScreen(
                 onOpenPattern = { navController.navigate(Routes.pattern(it)) },
                 onAddManually = { navController.navigate(Routes.edit()) },
                 onImportFromWeb = { navController.navigate(Routes.import()) },
                 onImportPdf = { navController.navigate(Routes.importPdf(it)) },
+                onOpenCategories = { navController.navigate(Routes.CATEGORIES) },
                 showTagRequest = showTag,
                 onShowTagHandled = { entry.savedStateHandle[KEY_SHOW_TAG] = null },
+                showSectionRequest = showSection,
+                onShowSectionHandled = { entry.savedStateHandle[KEY_SHOW_SECTION] = null },
             )
+        }
+
+        composable(Routes.CATEGORIES) {
+            CategoriesScreen(onBack = { navController.popBackStack() })
         }
 
         composable(
@@ -88,6 +101,11 @@ fun ChainOneNavHost(shared: SharedItem? = null, onShareHandled: () -> Unit = {})
                 onShowTag = { tagId ->
                     // Back to the library, filtered to that tag.
                     navController.getBackStackEntry(Routes.LIBRARY).savedStateHandle[KEY_SHOW_TAG] = tagId
+                    navController.popBackStack(Routes.LIBRARY, inclusive = false)
+                },
+                onShowSection = { key ->
+                    // Back to the library, at that category's section.
+                    navController.getBackStackEntry(Routes.LIBRARY).savedStateHandle[KEY_SHOW_SECTION] = key
                     navController.popBackStack(Routes.LIBRARY, inclusive = false)
                 },
             )

@@ -38,6 +38,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import io.github.juliegaunt.chainone.R
+import io.github.juliegaunt.chainone.data.db.Category
 import io.github.juliegaunt.chainone.data.db.Pattern
 import io.github.juliegaunt.chainone.data.db.PatternStatus
 import io.github.juliegaunt.chainone.data.db.Tag
@@ -45,6 +46,7 @@ import io.github.juliegaunt.chainone.data.importer.UrlTools
 import io.github.juliegaunt.chainone.ui.components.PatternCover
 import io.github.juliegaunt.chainone.ui.components.colors
 import io.github.juliegaunt.chainone.ui.components.labelRes
+import io.github.juliegaunt.chainone.ui.library.LibraryViewModel
 import java.io.File
 
 /** The pattern at a glance: photo, title, status, tags, hook and yarn, materials, notes and source link. */
@@ -54,8 +56,11 @@ fun OverviewTab(
     pattern: Pattern,
     cover: File?,
     tags: List<Tag>,
+    category: Category?,
+    hasCategories: Boolean,
     onStatusChange: (PatternStatus) -> Unit,
     onShowTag: (Long) -> Unit,
+    onShowSection: (String) -> Unit,
 ) {
     Column(
         Modifier
@@ -86,7 +91,16 @@ fun OverviewTab(
                 }
             }
 
-            StatusPicker(pattern.status, onStatusChange)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                StatusPicker(pattern.status, onStatusChange)
+                if (hasCategories) {
+                    // Tapping the category opens the library at that section.
+                    AssistChip(
+                        onClick = { onShowSection(LibraryViewModel.sectionKey(category)) },
+                        label = { Text(category?.name ?: stringResource(R.string.library_other)) },
+                    )
+                }
+            }
 
             if (tags.isNotEmpty()) {
                 // Tapping a tag shows the library's other patterns with it.

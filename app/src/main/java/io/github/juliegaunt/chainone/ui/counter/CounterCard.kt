@@ -158,10 +158,10 @@ private fun CounterMenu(
                 action()
             }
             MenuItem(R.string.counter_set_number) { choose(onSetValue) }
-            MenuItem(R.string.counter_edit) { choose(onEdit) }
+            MenuItem(R.string.action_edit) { choose(onEdit) }
             MenuItem(R.string.counter_reset) { choose(onReset) }
-            if (!isFirst) MenuItem(R.string.counter_move_up) { choose { onMove(-1) } }
-            if (!isLast) MenuItem(R.string.counter_move_down) { choose { onMove(+1) } }
+            if (!isFirst) MenuItem(R.string.action_move_up) { choose { onMove(-1) } }
+            if (!isLast) MenuItem(R.string.action_move_down) { choose { onMove(+1) } }
             MenuItem(R.string.action_delete) { choose(onDelete) }
         }
     }

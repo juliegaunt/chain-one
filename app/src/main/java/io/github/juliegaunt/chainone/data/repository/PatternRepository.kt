@@ -29,6 +29,8 @@ data class PatternDraft(
     val notes: String = "",
     val status: PatternStatus = PatternStatus.WANT_TO_MAKE,
     val tags: List<String> = emptyList(),
+    /** A category picked by hand, or null to sort by title. */
+    val categoryId: Long? = null,
 )
 
 /** Keeps the database and the files on disk in step for everything pattern-related. */
@@ -66,6 +68,7 @@ class PatternRepository(
                 instructions = draft.instructions.trim(),
                 notes = draft.notes.trim(),
                 status = draft.status,
+                categoryId = draft.categoryId,
                 createdAt = now,
                 updatedAt = now,
             ),
@@ -87,6 +90,7 @@ class PatternRepository(
                 instructions = draft.instructions.trim(),
                 notes = draft.notes.trim(),
                 status = draft.status,
+                categoryId = draft.categoryId,
                 updatedAt = clock(),
             ),
         )

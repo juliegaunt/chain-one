@@ -208,6 +208,15 @@ private fun EditForm(
             }
         }
 
+        if (state.categories.isNotEmpty()) {
+            CategoryPicker(
+                title = form.title,
+                chosenId = form.categoryId,
+                categories = state.categories,
+                onChoose = { id -> onChange { it.copy(categoryId = id) } },
+            )
+        }
+
         TagsField(
             tags = form.tags,
             input = state.tagInput,

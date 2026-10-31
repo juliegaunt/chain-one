@@ -15,8 +15,9 @@ import androidx.room.RoomDatabase
         PatternTag::class,
         Counter::class,
         CounterHistory::class,
+        Category::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
     autoMigrations = [
         // v2: repeat counters (two new, empty columns on `counters`).
@@ -25,6 +26,8 @@ import androidx.room.RoomDatabase
         AutoMigration(from = 2, to = 3),
         // v4: the row marker on PDFs (three new, empty columns on `pattern_attachments`).
         AutoMigration(from = 3, to = 4),
+        // v5: library categories (a new table, and a new, empty categoryId column on `patterns`).
+        AutoMigration(from = 4, to = 5),
     ],
 )
 abstract class ChainOneDatabase : RoomDatabase() {
@@ -34,6 +37,8 @@ abstract class ChainOneDatabase : RoomDatabase() {
     abstract fun counterDao(): CounterDao
 
     abstract fun pdfDao(): PdfDao
+
+    abstract fun categoryDao(): CategoryDao
 
     abstract fun backupDao(): BackupDao
 

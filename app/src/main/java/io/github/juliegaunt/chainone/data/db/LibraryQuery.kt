@@ -27,6 +27,8 @@ data class PatternSummary(
     val status: PatternStatus,
     val isFavorite: Boolean,
     val coverImagePath: String?,
+    /** A category picked by hand, or null to sort by title. */
+    val categoryId: Long?,
 )
 
 /** A tag and how many patterns carry it. */
@@ -38,7 +40,7 @@ data class TagCount(val id: Long, val name: String, val patternCount: Int)
  */
 internal object LibraryQuery {
 
-    private const val SUMMARY_COLUMNS = "p.id, p.title, p.designer, p.status, p.isFavorite, p.coverImagePath"
+    private const val SUMMARY_COLUMNS = "p.id, p.title, p.designer, p.status, p.isFavorite, p.coverImagePath, p.categoryId"
     private val SPACES = Regex("""\s+""")
 
     private val SEARCHED_COLUMNS = listOf("title", "designer", "hookSize", "yarnWeight", "materials", "instructions", "notes")

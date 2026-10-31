@@ -14,8 +14,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
@@ -74,8 +74,11 @@ fun LibraryScreen(
     onAddManually: () -> Unit,
     onImportFromWeb: () -> Unit,
     onImportPdf: (Uri) -> Unit,
+    onOpenCategories: () -> Unit,
     showTagRequest: Long? = null,
     onShowTagHandled: () -> Unit = {},
+    showSectionRequest: String? = null,
+    onShowSectionHandled: () -> Unit = {},
     viewModel: LibraryViewModel = viewModel(factory = LibraryViewModel.Factory),
     backupViewModel: BackupViewModel = viewModel(factory = BackupViewModel.Factory),
 ) {
@@ -114,6 +117,26 @@ fun LibraryScreen(
         }
     }
 
+    // A category tapped on a pattern's page: open that section and scroll to it once it's shown.
+    val gridState = rememberLazyGridState()
+    val listState = rememberLazyListState()
+    var scrollToSection by rememberSaveable { mutableStateOf<String?>(null) }
+    LaunchedEffect(showSectionRequest) {
+        showSectionRequest?.let {
+            viewModel.showSection(it)
+            scrollToSection = it
+            onShowSectionHandled()
+        }
+    }
+    LaunchedEffect(scrollToSection, state.sections) {
+        val key = scrollToSection ?: return@LaunchedEffect
+        val section = state.sections.firstOrNull { it.key == key } ?: return@LaunchedEffect
+        if (section.isFolded || state.filter.isActive) return@LaunchedEffect
+        val index = headerIndex(state.sections, key) ?: return@LaunchedEffect
+        if (state.layout == LibraryLayout.GRID) gridState.animateScrollToItem(index) else listState.animateScrollToItem(index)
+        scrollToSection = null
+    }
+
     Scaffold(
         topBar = {
             LibraryTopBar(
@@ -123,6 +146,7 @@ fun LibraryScreen(
                 onSearchChange = viewModel::updateSearch,
                 onToggleFavorites = viewModel::toggleFavoritesOnly,
                 onToggleLayout = viewModel::toggleLayout,
+                onCategories = onOpenCategories,
                 onBackUp = { saveBackup.launch("chain-one-backup-${LocalDate.now()}.zip") },
                 onRestore = { openBackup.launch(BACKUP_TYPES) },
             )
@@ -167,22 +191,28 @@ fun LibraryScreen(
             when {
                 state.isLoading -> Unit
                 !state.hasPatterns -> EmptyMessage(stringResource(R.string.library_empty), modifier)
-                state.items.isEmpty() && filter == LibraryFilter(favoritesOnly = true) ->
+                state.sections.isEmpty() && filter == LibraryFilter(favoritesOnly = true) ->
                     EmptyMessage(stringResource(R.string.library_empty_favorites), modifier)
-                state.items.isEmpty() -> EmptyMessage(stringResource(R.string.library_no_matches), modifier) {
+                state.sections.isEmpty() -> EmptyMessage(stringResource(R.string.library_no_matches), modifier) {
                     TextButton(onClick = viewModel::clearFilters) { Text(stringResource(R.string.library_clear_filters)) }
                 }
                 state.layout == LibraryLayout.GRID -> PatternGrid(
-                    items = state.items,
+                    sections = state.sections,
+                    showHeaders = state.hasCategories,
+                    onToggleSection = viewModel::toggleSection,
                     onOpen = onOpenPattern,
                     onToggleFavorite = viewModel::toggleFavorite,
                     modifier = modifier,
+                    state = gridState,
                 )
                 else -> PatternList(
-                    items = state.items,
+                    sections = state.sections,
+                    showHeaders = state.hasCategories,
+                    onToggleSection = viewModel::toggleSection,
                     onOpen = onOpenPattern,
                     onToggleFavorite = viewModel::toggleFavorite,
                     modifier = modifier,
+                    state = listState,
                 )
             }
         }

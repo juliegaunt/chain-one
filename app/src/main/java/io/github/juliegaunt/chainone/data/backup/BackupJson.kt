@@ -1,5 +1,6 @@
 package io.github.juliegaunt.chainone.data.backup
 
+import io.github.juliegaunt.chainone.data.db.Category
 import io.github.juliegaunt.chainone.data.db.Counter
 import io.github.juliegaunt.chainone.data.db.LibrarySnapshot
 import io.github.juliegaunt.chainone.data.db.Pattern
@@ -36,8 +37,11 @@ internal object BackupJson {
 
     const val FORMAT = "chain-one-backup"
 
-    /** Raise when the layout changes in a way older versions couldn't read. */
-    const val VERSION = 1
+    /**
+     * Raise when older versions of the app couldn't restore a backup faithfully.
+     * 2: categories (version 1 backups have none, and still restore).
+     */
+    const val VERSION = 2
 
     fun write(contents: BackupContents, appVersion: String): String {
         val library = contents.library
@@ -53,6 +57,7 @@ internal object BackupJson {
             .put("tags", JSONArray(library.tags.map { JSONObject().put("id", it.id).put("name", it.name) }))
             .put("patternTags", JSONArray(library.patternTags.map { JSONObject().put("patternId", it.patternId).put("tagId", it.tagId) }))
             .put("counters", JSONArray(library.counters.map(::counterJson)))
+            .put("categories", JSONArray(library.categories.map(::categoryJson)))
             .put("files", JSONArray(contents.files.map { (path, size) -> JSONObject().put("path", path).put("size", size) }))
             .toString()
     }
@@ -79,6 +84,7 @@ internal object BackupJson {
                     tags = json.objects("tags").map { Tag(id = it.getLong("id"), name = it.getString("name")) },
                     patternTags = json.objects("patternTags").map { PatternTag(it.getLong("patternId"), it.getLong("tagId")) },
                     counters = json.objects("counters").map(::readCounter),
+                    categories = json.objects("categories").map(::readCategory),
                 ),
                 settings = readSettings(json.optJSONObject("settings") ?: JSONObject()),
                 files = json.getJSONArray("files").let { files ->
@@ -111,6 +117,7 @@ internal object BackupJson {
         .put("createdAt", p.createdAt)
         .put("updatedAt", p.updatedAt)
         .put("lastOpenedAt", p.lastOpenedAt ?: JSONObject.NULL)
+        .put("categoryId", p.categoryId ?: JSONObject.NULL)
 
     private fun readPattern(o: JSONObject) = Pattern(
         id = o.getLong("id"),
@@ -130,6 +137,7 @@ internal object BackupJson {
         createdAt = o.getLong("createdAt"),
         updatedAt = o.getLong("updatedAt"),
         lastOpenedAt = o.longOrNull("lastOpenedAt"),
+        categoryId = o.longOrNull("categoryId"),
     )
 
     private fun imageJson(i: PatternImage) = JSONObject()
@@ -189,6 +197,19 @@ internal object BackupJson {
         repeatLength = o.intOrNull("repeatLength"),
         repeatTimes = o.intOrNull("repeatTimes"),
         rowSection = o.intOrNull("rowSection"),
+    )
+
+    private fun categoryJson(c: Category) = JSONObject()
+        .put("id", c.id)
+        .put("name", c.name)
+        .put("extraWords", c.extraWords)
+        .put("position", c.position)
+
+    private fun readCategory(o: JSONObject) = Category(
+        id = o.getLong("id"),
+        name = o.getString("name"),
+        extraWords = o.optString("extraWords"),
+        position = o.optInt("position"),
     )
 
     private fun settingsJson(s: AppSettings.Snapshot) = JSONObject()

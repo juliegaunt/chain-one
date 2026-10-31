@@ -46,7 +46,7 @@ import io.github.juliegaunt.chainone.data.settings.LibraryLayout
 
 /**
  * The library's top bar: the logo, or the search box while searching, then search, favorites,
- * grid/list and the ⋮ menu for backups.
+ * grid/list and the ⋮ menu (categories and backups).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,6 +57,7 @@ fun LibraryTopBar(
     onSearchChange: (String) -> Unit,
     onToggleFavorites: () -> Unit,
     onToggleLayout: () -> Unit,
+    onCategories: () -> Unit,
     onBackUp: () -> Unit,
     onRestore: () -> Unit,
 ) {
@@ -123,21 +124,28 @@ fun LibraryTopBar(
                 }
             }
             if (!state.isSearching) {
-                LibraryMenu(onBackUp = onBackUp, onRestore = onRestore)
+                LibraryMenu(onCategories = onCategories, onBackUp = onBackUp, onRestore = onRestore)
             }
         },
     )
 }
 
-/** The top bar's ⋮ menu: backing up and restoring the whole library. */
+/** The top bar's ⋮ menu: the categories, and backing up and restoring the whole library. */
 @Composable
-private fun LibraryMenu(onBackUp: () -> Unit, onRestore: () -> Unit) {
+private fun LibraryMenu(onCategories: () -> Unit, onBackUp: () -> Unit, onRestore: () -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     Box {
         IconButton(onClick = { expanded = true }) {
             Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.action_more))
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.categories_title)) },
+                onClick = {
+                    expanded = false
+                    onCategories()
+                },
+            )
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.backup_menu_back_up)) },
                 onClick = {

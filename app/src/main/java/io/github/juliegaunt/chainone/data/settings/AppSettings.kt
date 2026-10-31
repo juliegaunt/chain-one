@@ -43,6 +43,16 @@ class AppSettings(context: Context) {
         _keepScreenOn.value = enabled
     }
 
+    /** Library sections folded away: category ids, or [OTHER_SECTION] for "Other". */
+    private val _foldedSections = MutableStateFlow(prefs.getStringSet(KEY_FOLDED_SECTIONS, null).orEmpty().toSet())
+    val foldedSections: StateFlow<Set<String>> = _foldedSections.asStateFlow()
+
+    fun setSectionFolded(section: String, folded: Boolean) {
+        val sections = if (folded) _foldedSections.value + section else _foldedSections.value - section
+        prefs.edit { putStringSet(KEY_FOLDED_SECTIONS, sections) }
+        _foldedSections.value = sections
+    }
+
     /** All the settings at once, for backups. */
     data class Snapshot(val libraryLayout: LibraryLayout, val countWithVolumeKeys: Boolean, val keepScreenOn: Boolean)
 
@@ -54,9 +64,13 @@ class AppSettings(context: Context) {
         setKeepScreenOn(snapshot.keepScreenOn)
     }
 
-    private companion object {
-        const val KEY_LIBRARY_LAYOUT = "library_layout"
-        const val KEY_VOLUME_KEYS = "count_with_volume_keys"
-        const val KEY_KEEP_SCREEN_ON = "keep_screen_on"
+    companion object {
+        /** The key [foldedSections] uses for the "Other" section. */
+        const val OTHER_SECTION = "other"
+
+        private const val KEY_FOLDED_SECTIONS = "folded_sections"
+        private const val KEY_LIBRARY_LAYOUT = "library_layout"
+        private const val KEY_VOLUME_KEYS = "count_with_volume_keys"
+        private const val KEY_KEEP_SCREEN_ON = "keep_screen_on"
     }
 }

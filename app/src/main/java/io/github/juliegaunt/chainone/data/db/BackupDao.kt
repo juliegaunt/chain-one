@@ -13,6 +13,7 @@ data class LibrarySnapshot(
     val tags: List<Tag>,
     val patternTags: List<PatternTag>,
     val counters: List<Counter>,
+    val categories: List<Category> = emptyList(),
 )
 
 /** Reads and replaces the whole library at once, for backup and restore. */
@@ -37,6 +38,9 @@ interface BackupDao {
     @Query("SELECT * FROM counters ORDER BY id")
     suspend fun allCounters(): List<Counter>
 
+    @Query("SELECT * FROM categories ORDER BY id")
+    suspend fun allCategories(): List<Category>
+
     @Query("SELECT COUNT(*) FROM patterns")
     suspend fun patternCount(): Int
 
@@ -46,6 +50,12 @@ interface BackupDao {
 
     @Query("DELETE FROM tags")
     suspend fun deleteAllTags()
+
+    @Query("DELETE FROM categories")
+    suspend fun deleteAllCategories()
+
+    @Insert
+    suspend fun insertCategories(categories: List<Category>)
 
     @Insert
     suspend fun insertPatterns(patterns: List<Pattern>)
@@ -68,7 +78,7 @@ interface BackupDao {
     /** The library as it is at one moment, even if something changes it meanwhile. */
     @Transaction
     suspend fun snapshot(): LibrarySnapshot =
-        LibrarySnapshot(allPatterns(), allImages(), allAttachments(), allTags(), allPatternTags(), allCounters())
+        LibrarySnapshot(allPatterns(), allImages(), allAttachments(), allTags(), allPatternTags(), allCounters(), allCategories())
 
     /**
      * Swaps the whole library for [snapshot], keeping its ids so file paths still match. All or
@@ -78,6 +88,9 @@ interface BackupDao {
     suspend fun replaceAll(snapshot: LibrarySnapshot) {
         deleteAllPatterns()
         deleteAllTags()
+        deleteAllCategories()
+        // Categories first: patterns can point at them.
+        insertCategories(snapshot.categories)
         insertPatterns(snapshot.patterns)
         insertTags(snapshot.tags)
         insertImages(snapshot.images)

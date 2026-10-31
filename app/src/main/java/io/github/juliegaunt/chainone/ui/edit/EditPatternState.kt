@@ -1,6 +1,7 @@
 package io.github.juliegaunt.chainone.ui.edit
 
 import android.net.Uri
+import io.github.juliegaunt.chainone.data.db.Category
 import io.github.juliegaunt.chainone.data.db.Pattern
 import io.github.juliegaunt.chainone.data.db.PatternStatus
 import io.github.juliegaunt.chainone.data.importer.StagedImport
@@ -19,6 +20,8 @@ data class PatternForm(
     val notes: String = "",
     val status: PatternStatus = PatternStatus.WANT_TO_MAKE,
     val tags: List<String> = emptyList(),
+    /** A category picked by hand; null leaves it to the title. */
+    val categoryId: Long? = null,
 ) {
     fun toDraft() = PatternDraft(
         title = title,
@@ -31,6 +34,7 @@ data class PatternForm(
         notes = notes,
         status = status,
         tags = tags,
+        categoryId = categoryId,
     )
 
     companion object {
@@ -54,6 +58,7 @@ data class PatternForm(
             instructions = pattern.instructions,
             notes = pattern.notes,
             status = pattern.status,
+            categoryId = pattern.categoryId,
         )
     }
 }
@@ -103,6 +108,8 @@ data class EditPatternUiState(
     val tagInput: String = "",
     /** Every tag in the library, to suggest while typing. */
     val allTags: List<String> = emptyList(),
+    /** The library's categories, to pick from; the field is hidden while there are none. */
+    val categories: List<Category> = emptyList(),
     /** Set when saving finished; the screen then navigates away. */
     val savedId: Long? = null,
 ) {

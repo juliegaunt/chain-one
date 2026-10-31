@@ -21,7 +21,16 @@ enum class PatternStatus { WANT_TO_MAKE, IN_PROGRESS, FINISHED }
  */
 @Entity(
     tableName = "patterns",
-    indices = [Index("status"), Index("isFavorite"), Index("updatedAt")],
+    foreignKeys = [
+        ForeignKey(
+            entity = Category::class,
+            parentColumns = ["id"],
+            childColumns = ["categoryId"],
+            // Deleting a category puts its hand-picked patterns back to sorting by title.
+            onDelete = ForeignKey.SET_NULL,
+        ),
+    ],
+    indices = [Index("status"), Index("isFavorite"), Index("updatedAt"), Index("categoryId")],
 )
 data class Pattern(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -42,6 +51,24 @@ data class Pattern(
     val createdAt: Long,
     val updatedAt: Long,
     val lastOpenedAt: Long? = null,
+    /** A category picked by hand; null means the title decides (see `CategoryMatcher`). Added in schema v5. */
+    val categoryId: Long? = null,
+)
+
+/**
+ * A section of the library, such as "Hats". Patterns whose titles contain its name or one of its
+ * [extraWords] land in it; see `CategoryMatcher`. [position] orders the sections. Added in schema v5.
+ */
+@Entity(
+    tableName = "categories",
+    indices = [Index(value = ["name"], unique = true)],
+)
+data class Category(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @ColumnInfo(collate = ColumnInfo.NOCASE) val name: String,
+    /** Other words that mean the same kind of item, comma-separated, e.g. "beanie, beret". */
+    val extraWords: String = "",
+    val position: Int,
 )
 
 @Entity(

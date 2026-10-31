@@ -15,6 +15,7 @@ import io.github.juliegaunt.chainone.data.importer.ImportStaging
 import io.github.juliegaunt.chainone.data.importer.PdfNames
 import io.github.juliegaunt.chainone.data.importer.StagedImport
 import io.github.juliegaunt.chainone.data.importer.UrlTools
+import io.github.juliegaunt.chainone.data.repository.CategoryRepository
 import io.github.juliegaunt.chainone.data.repository.PatternRepository
 import io.github.juliegaunt.chainone.data.repository.PdfRepository
 import io.github.juliegaunt.chainone.ui.components.coverFile
@@ -36,6 +37,7 @@ class EditPatternViewModel(
     savedStateHandle: SavedStateHandle,
     private val repository: PatternRepository,
     private val pdfRepository: PdfRepository,
+    categoryRepository: CategoryRepository,
     private val fileStore: FileStore,
     private val staging: ImportStaging,
     private val appScope: CoroutineScope,
@@ -59,6 +61,15 @@ class EditPatternViewModel(
     init {
         viewModelScope.launch {
             repository.observeTags().collect { tags -> _uiState.update { it.copy(allTags = tags.map { tag -> tag.name }) } }
+        }
+        viewModelScope.launch {
+            categoryRepository.observeCategories().collect { categories ->
+                // A hand-picked category that's been deleted falls back to the title.
+                _uiState.update { state ->
+                    val chosen = state.form.categoryId?.takeIf { id -> categories.any { it.id == id } }
+                    state.copy(categories = categories, form = state.form.copy(categoryId = chosen))
+                }
+            }
         }
         if (importId != null) {
             viewModelScope.launch {
@@ -296,6 +307,7 @@ class EditPatternViewModel(
                     createSavedStateHandle(),
                     container.patternRepository,
                     container.pdfRepository,
+                    container.categoryRepository,
                     container.fileStore,
                     container.importStaging,
                     container.appScope,

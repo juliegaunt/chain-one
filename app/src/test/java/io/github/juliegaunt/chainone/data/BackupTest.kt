@@ -15,6 +15,7 @@ import io.github.juliegaunt.chainone.data.db.PatternTag
 import io.github.juliegaunt.chainone.data.db.RowMarker
 import io.github.juliegaunt.chainone.data.files.FileStore
 import io.github.juliegaunt.chainone.data.importer.StagedImport
+import io.github.juliegaunt.chainone.data.repository.CategoryRepository
 import io.github.juliegaunt.chainone.data.repository.CounterRepository
 import io.github.juliegaunt.chainone.data.repository.PatternDraft
 import io.github.juliegaunt.chainone.data.repository.PatternRepository
@@ -32,6 +33,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import org.json.JSONObject
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.io.ByteArrayOutputStream
@@ -82,8 +84,17 @@ class BackupTest {
 
     /** Two patterns with tags, a cover, a PDF with a row marker, a saved web page and counters. */
     private suspend fun fillLibrary(phone: Phone) {
+        CategoryRepository(phone.db.categoryDao()).add("Throws", "afghan")
+        val throws = phone.db.categoryDao().getAll().single()
         val blanket = phone.patterns.create(
-            PatternDraft(title = "Blanket", designer = "Jo", notes = "For the baby", status = PatternStatus.IN_PROGRESS, tags = listOf("baby", "Blanket")),
+            PatternDraft(
+                title = "Blanket",
+                designer = "Jo",
+                notes = "For the baby",
+                status = PatternStatus.IN_PROGRESS,
+                tags = listOf("baby", "Blanket"),
+                categoryId = throws.id,
+            ),
         )
         phone.patterns.setFavorite(blanket, true)
         phone.patterns.setCover(blanket, "cover".byteInputStream(), "jpg")
@@ -137,6 +148,25 @@ class BackupTest {
         assertEquals(listOf(12, 7), new.counters.observeCounters(blanket.id).first().map { it.value })
         assertFalse(new.counters.observeCanUndo(blanket.id).first())
         assertFalse(File(new.root, ".restore").exists())
+    }
+
+    @Test
+    fun aBackupFromBeforeCategoriesStillRestores() = runTest {
+        fillLibrary(old)
+        val snapshot = old.db.backupDao().snapshot()
+        // Version 1 had no categories, and no categoryId on patterns.
+        val json = JSONObject(BackupJson.write(BackupContents(1L, snapshot, settings.snapshot(), emptyMap()), "test"))
+            .put("version", 1)
+            .apply { remove("categories") }
+        val patterns = json.getJSONArray("patterns")
+        for (i in 0 until patterns.length()) patterns.getJSONObject(i).remove("categoryId")
+        val new = phone()
+
+        new.backup.restore(zipOf(LibraryBackup.MANIFEST to json.toString().toByteArray()).inputStream())
+
+        assertEquals(listOf("Blanket", "Tote"), new.db.backupDao().allPatterns().map { it.title })
+        assertTrue(new.db.backupDao().allCategories().isEmpty())
+        assertTrue(new.db.backupDao().allPatterns().all { it.categoryId == null })
     }
 
     @Test

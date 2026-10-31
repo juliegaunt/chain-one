@@ -5,11 +5,14 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.juliegaunt.chainone.appContainer
+import io.github.juliegaunt.chainone.data.category.CategoryMatcher
+import io.github.juliegaunt.chainone.data.db.Category
 import io.github.juliegaunt.chainone.data.db.LibraryFilter
 import io.github.juliegaunt.chainone.data.db.PatternStatus
 import io.github.juliegaunt.chainone.data.db.PatternSummary
 import io.github.juliegaunt.chainone.data.db.TagCount
 import io.github.juliegaunt.chainone.data.files.FileStore
+import io.github.juliegaunt.chainone.data.repository.CategoryRepository
 import io.github.juliegaunt.chainone.data.repository.PatternRepository
 import io.github.juliegaunt.chainone.data.settings.AppSettings
 import io.github.juliegaunt.chainone.data.settings.LibraryLayout
@@ -27,8 +30,17 @@ import java.io.File
 
 data class LibraryItem(val pattern: PatternSummary, val cover: File?)
 
+/**
+ * One foldable section of the library: a category, or "Other" when [category] is null.
+ * [key] is how [AppSettings.foldedSections] remembers it.
+ */
+data class LibrarySection(val key: String, val category: Category?, val items: List<LibraryItem>, val isFolded: Boolean)
+
 data class LibraryUiState(
-    val items: List<LibraryItem> = emptyList(),
+    /** The patterns to show, by category. Without categories, one unfolded section holds them all. */
+    val sections: List<LibrarySection> = emptyList(),
+    /** False until the first category is made: the library is then one plain grid or list, as before. */
+    val hasCategories: Boolean = false,
     val filter: LibraryFilter = LibraryFilter(),
     /** True while the search box is open in the top bar. */
     val isSearching: Boolean = false,
@@ -42,6 +54,7 @@ data class LibraryUiState(
 /** The library's patterns with the current search and filters applied, and every tag. */
 class LibraryViewModel(
     private val repository: PatternRepository,
+    categoryRepository: CategoryRepository,
     private val fileStore: FileStore,
     private val settings: AppSettings,
 ) : ViewModel() {
@@ -55,15 +68,27 @@ class LibraryViewModel(
 
     private val controls = combine(filter, isSearching) { filter, searching -> filter to searching }
 
+    private val display = combine(categoryRepository.observeCategories(), settings.foldedSections, settings.libraryLayout, ::Triple)
+
     val uiState: StateFlow<LibraryUiState> = combine(
         patterns,
         controls,
         repository.observeTags(),
         repository.observePatternCount(),
-        settings.libraryLayout,
-    ) { patterns, (filter, searching), tags, count, layout ->
+        display,
+    ) { patterns, (filter, searching), tags, count, (categories, folded, layout) ->
+        val sections = CategoryMatcher.group(patterns, categories, { it.title }, { it.categoryId }).map { (category, members) ->
+            val key = sectionKey(category)
+            LibrarySection(
+                key = key,
+                category = category,
+                items = members.map { LibraryItem(it, fileStore.coverFile(it.coverImagePath)) },
+                isFolded = categories.isNotEmpty() && key in folded,
+            )
+        }
         LibraryUiState(
-            items = patterns.map { LibraryItem(it, fileStore.coverFile(it.coverImagePath)) },
+            sections = sections,
+            hasCategories = categories.isNotEmpty(),
             filter = filter,
             isSearching = searching,
             tags = tags,
@@ -90,6 +115,17 @@ class LibraryViewModel(
     fun showOnlyTag(tagId: Long) {
         filter.value = LibraryFilter(tagIds = setOf(tagId))
         isSearching.value = true
+    }
+
+    /** For a category tapped on a pattern's page: the whole library, with that section open. */
+    fun showSection(key: String) {
+        filter.value = LibraryFilter()
+        isSearching.value = false
+        settings.setSectionFolded(key, folded = false)
+    }
+
+    fun toggleSection(section: LibrarySection) {
+        settings.setSectionFolded(section.key, folded = !section.isFolded)
     }
 
     fun openSearch() {
@@ -148,10 +184,13 @@ class LibraryViewModel(
     }
 
     companion object {
+        /** How a section is remembered: its category's id, or "other". */
+        fun sectionKey(category: Category?): String = category?.id?.toString() ?: AppSettings.OTHER_SECTION
+
         val Factory = viewModelFactory {
             initializer {
                 val container = appContainer
-                LibraryViewModel(container.patternRepository, container.fileStore, container.settings)
+                LibraryViewModel(container.patternRepository, container.categoryRepository, container.fileStore, container.settings)
             }
         }
     }
