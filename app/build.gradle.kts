@@ -21,8 +21,8 @@ android {
         minSdk = 26
         targetSdk = 37
         // Raise versionCode by one for every release; versionName is what people see.
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.1.0"
     }
 
     signingConfigs {

@@ -74,5 +74,5 @@ Offline, ad-free Android app for storing crochet patterns (from URLs and PDFs) w
 - Milestone 6 done (PDF import, viewer, row marker; schema v4). Links to PDFs on the web import screen import the PDF
 - Milestone 7 done (backup/restore). All planned milestones are done
 - 1.0.0 released 2026-10-30 on GitHub Releases (tag `v1.0.0`, `chain-one-1.0.0.apk`). Signing certificate SHA-256: ea5c32b25e8ada5f9061e4c60f23151dee223013ddd319b8900377c3a1382560. For each release: raise `versionCode`, set `versionName`, `assembleRelease`, test on the phone, tag `vX.Y.Z`, attach the APK
-- Categories done (schema v5; the owner tried them on their real library). Next release: 1.1.0 with categories
+- Categories done (schema v5; the owner tried them on their real library). 1.1.0 (versionCode 2) built with categories and installed over the owner's 1.0.0 (database upgraded cleanly); publish as GitHub release `v1.1.0`
 - Next: F-Droid (store description and screenshots in fastlane format, a daemon JDK F-Droid's builders have, and deciding on reproducible builds so F-Droid can ship the owner-signed APK). Possible later: row highlighting on the Web page tab (would need scripts enabled for the app's own code only); copying a PDF's text into Instructions (Android 15+ only)
