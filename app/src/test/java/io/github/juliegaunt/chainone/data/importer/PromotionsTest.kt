@@ -40,10 +40,23 @@ class PromotionsTest {
     }
 
     @Test
+    fun hidesTheLinesIntroducingAPromotionButNotTheSameWordsElsewhere() {
+        fun line(start: String) = content.select("p, h3").single { it.text().startsWith(start) }
+
+        assertTrue(line("Want to pin it").hasAttr(Promotions.HIDDEN))
+        assertTrue(line("Click the image below").hasAttr(Promotions.HIDDEN))
+        assertTrue(line("Or… just scroll down").hasAttr(Promotions.HIDDEN))
+        assertFalse("not next to a promotion", hidden(line("Tip: pin it")))
+        assertFalse("too long and not promotional", hidden(line("You can also add")))
+        assertFalse(hidden(line("This cozy cowl")))
+    }
+
+    @Test
     fun hiddenLinesStayOutOfTheInstructions() {
         val markup = PageContent.toMarkup(content)
 
         assertFalse(markup.contains("Click here to buy"))
+        assertFalse(markup.contains("Want to pin it"))
         assertTrue(markup.contains("Round 1: Ch 80"))
         assertTrue(markup.contains("Ravelry"))
     }

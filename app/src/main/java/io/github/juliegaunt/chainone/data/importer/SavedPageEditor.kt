@@ -19,6 +19,9 @@ object SavedPageEditor {
     /** Marks a page whose promotions have been looked for, so [tidyOnce] leaves it alone. */
     private const val TIDIED = "chain-one-tidied"
 
+    /** The marker's content: 1 hid pictures and buy links; 2 also hides the lines introducing them. */
+    private const val TIDY_VERSION = 2
+
     private val HIDDEN = "[${Promotions.HIDDEN}]"
 
     /** Adds the style rule that hides marked parts, and notes the page as tidied. */
@@ -26,27 +29,35 @@ object SavedPageEditor {
         if (page.getElementById(STYLE_ID) == null) {
             page.head().appendElement("style").attr("id", STYLE_ID).appendChild(DataNode("$HIDDEN { display: none !important; }"))
         }
-        if (page.selectFirst("meta[name=$TIDIED]") == null) {
-            page.head().appendElement("meta").attr("name", TIDIED).attr("content", "1")
-        }
+        val marker = page.selectFirst("meta[name=$TIDIED]") ?: page.head().appendElement("meta").attr("name", TIDIED)
+        marker.attr("content", TIDY_VERSION.toString())
     }
 
     /**
-     * For pages saved before promotions were hidden on import: hides them, once. A page whose
-     * hidden parts were shown again stays that way. Returns true if the page changed.
+     * For pages saved before promotions were hidden on import: hides them, once. A page tidied by
+     * an older version only has the newer steps applied around what's already hidden, so a page
+     * whose hidden parts were shown again stays that way. Returns true if the page changed.
      */
     suspend fun tidyOnce(page: File): Boolean = edit(page) { doc ->
-        if (doc.selectFirst("meta[name=$TIDIED]") != null) return@edit false
-        Promotions.hideIn(doc.body())
+        val tidied = doc.selectFirst("meta[name=$TIDIED]")?.attr("content")?.toIntOrNull()
+        when {
+            tidied == null -> Promotions.hideIn(doc.body())
+            tidied < TIDY_VERSION -> Promotions.hideLeadIns(doc.body())
+            else -> return@edit false
+        }
         prepare(doc)
         true
     }
 
-    /** Hides the picture saved as [fileName] (such as "image-3.jpg"). Returns true if one was found. */
+    /**
+     * Hides the picture saved as [fileName] (such as "image-3.jpg"), and any line just introducing
+     * it. Returns true if one was found.
+     */
     suspend fun hidePicture(page: File, fileName: String): Boolean = edit(page) { doc ->
         val img = doc.select("img").firstOrNull { it.attr("src").substringAfterLast('/') == fileName && it.closest(HIDDEN) == null }
             ?: return@edit false
         Promotions.hide(img, doc.body())
+        Promotions.hideLeadIns(doc.body())
         prepare(doc)
         true
     }

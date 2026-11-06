@@ -44,6 +44,50 @@ class SavedPageEditorTest {
     }
 
     @Test
+    fun aPageTidiedBeforeLeadInsWereHiddenGetsThemHiddenOnce() = runTest {
+        val page = File(tempFolder.newFolder("tidied"), "index.html").apply {
+            writeText(
+                """
+                <html><head><meta name="chain-one-tidied" content="1"></head><body>
+                <h2>Want to pin it for later?</h2>
+                <figure data-chain-one-hidden=""><img src="image-2.jpg"></figure>
+                <p>Round 1: Ch 80.</p>
+                </body></html>
+                """.trimIndent(),
+            )
+        }
+
+        assertTrue(SavedPageEditor.tidyOnce(page))
+        assertEquals(2, SavedPageEditor.hiddenCount(page))
+        assertFalse("only once", SavedPageEditor.tidyOnce(page))
+    }
+
+    @Test
+    fun anOldTidiedPageWithEverythingShownStaysShown() = runTest {
+        val page = File(tempFolder.newFolder("shown"), "index.html").apply {
+            writeText(
+                """<html><head><meta name="chain-one-tidied" content="1"></head><body>
+                <h2>Want to pin it for later?</h2><figure><img src="image-2.jpg" alt="Pin it"></figure></body></html>""",
+            )
+        }
+
+        SavedPageEditor.tidyOnce(page)
+
+        assertEquals(0, SavedPageEditor.hiddenCount(page))
+    }
+
+    @Test
+    fun hidingAPictureByHandAlsoHidesItsLeadIn() = runTest {
+        val page = File(tempFolder.newFolder("byhand"), "index.html").apply {
+            writeText("""<html><head></head><body><p>Intro</p><p>Click the image below to save it!</p><figure><img src="image-5.jpg"></figure></body></html>""")
+        }
+
+        SavedPageEditor.hidePicture(page, "image-5.jpg")
+
+        assertEquals(2, SavedPageEditor.hiddenCount(page))
+    }
+
+    @Test
     fun picturesCanBeHiddenByHandAndTheRuleHidesThem() = runTest {
         val page = oldPage()
 
@@ -62,7 +106,7 @@ class SavedPageEditorTest {
 
         val page = SnapshotBuilder.build(content, "Cozy Cowl", "https://example.com/cozy-cowl/", "Saved from example.com")
 
-        assertEquals(4, page.select("[${Promotions.HIDDEN}]").size)
+        assertEquals(7, page.select("[${Promotions.HIDDEN}]").size)
         assertTrue(page.getElementById("chain-one-hidden") != null)
         assertTrue(page.selectFirst("meta[name=chain-one-tidied]") != null)
     }
