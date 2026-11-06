@@ -122,7 +122,7 @@ object PatternParser {
         val coverImageUrl = jsonLd.imageUrl()?.let { resolve(document.location(), it) }
             ?: meta(document, "og:image")?.let { resolve(document.location(), it) }
             ?: meta(document, "twitter:image")?.let { resolve(document.location(), it) }
-            ?: content?.select("img")?.firstOrNull { !isTiny(it) }?.let(::imageUrl)
+            ?: content?.select("img")?.firstOrNull { !isTiny(it) && it.closest("[${Promotions.HIDDEN}]") == null }?.let(::imageUrl)
 
         return ParsedPattern(
             title = title,

@@ -279,5 +279,9 @@
     <string name="restore_damaged">This backup is damaged or incomplete, so nothing was changed. Try another copy of it.</string>
 
     <!-- Saved copy of a web page -->
+    <string name="saved_page_hide_title">Hide this picture?</string>
+    <string name="saved_page_hide_message">It stays saved with the pattern. ⋮ → Show hidden pictures brings it back.</string>
+    <string name="saved_page_hide">Hide</string>
+    <string name="saved_page_show_hidden">Show hidden pictures</string>
     <string name="snapshot_caption">Saved from %1$s on %2$s</string>
 </resources>

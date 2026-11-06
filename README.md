@@ -85,6 +85,8 @@ Debug builds install as a separate app, **Chain One (debug)**, so testing never 
 
 Tap **Add pattern → From a website** and paste a link, or in your phone's browser tap **Share → Chain One**. Chain One downloads the page, fills in what it can find (title, designer, hook size, yarn weight, materials, instructions, cover photo) and shows it to you to check before anything is saved. It also keeps a cleaned-up copy of the page, with its photos, on the pattern's **Web page** tab, so the original wording stays on your phone even if the website changes or disappears.
 
+The saved copy leaves out menus, comments, sharing buttons and ads, and hides the page's own "buy the PDF" and "pin it" graphics too. If something else gets in the way, press and hold a picture on the **Web page** tab and choose **Hide**. Nothing is deleted: **⋮ → Show hidden pictures** brings everything back.
+
 Some pages don't contain the pattern itself: video-only tutorials, directory sites that link to the designer's blog, and Ravelry listings for paid or off-site patterns. Chain One then says it couldn't find the instructions, and you still get the page copy.
 
 **Trying the share button on the emulator:** open Chrome on the emulator, go to a pattern page, tap **⋮ → Share…** and choose **Chain One**. The first time, Chain One may be under **More** in the share sheet.

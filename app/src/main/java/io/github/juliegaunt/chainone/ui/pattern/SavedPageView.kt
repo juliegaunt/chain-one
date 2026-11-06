@@ -1,5 +1,9 @@
 package io.github.juliegaunt.chainone.ui.pattern
 
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.getValue
+import android.os.Looper
+import android.os.Handler
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
@@ -17,11 +21,13 @@ import java.io.File
 /**
  * Shows the saved copy of a pattern's web page. It's fully offline: scripts are off, the network
  * is blocked, it can only load files from the page's own folder, and tapping a link opens it in
- * the browser instead.
+ * the browser instead. Pressing and holding a picture calls [onPictureLongPress] with its file name.
  */
 @Composable
-fun SavedPageView(page: File, modifier: Modifier = Modifier) {
-    key(page) {
+fun SavedPageView(page: File, version: Int, onPictureLongPress: (fileName: String) -> Unit, modifier: Modifier = Modifier) {
+    val longPress by rememberUpdatedState(onPictureLongPress)
+    // A new version (a picture hidden or shown) loads the page afresh.
+    key(page, version) {
         AndroidView(
             factory = { context ->
                 WebView(context).apply {
@@ -48,6 +54,19 @@ fun SavedPageView(page: File, modifier: Modifier = Modifier) {
                             }
                             return true
                         }
+                    }
+                    // Pressing and holding a picture offers to hide it.
+                    setOnLongClickListener {
+                        val type = hitTestResult.type
+                        if (type != WebView.HitTestResult.IMAGE_TYPE && type != WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE) {
+                            return@setOnLongClickListener false
+                        }
+                        val reply = Handler(Looper.getMainLooper()) { message ->
+                            message.data.getString("url")?.let { Uri.parse(it).lastPathSegment }?.let(longPress)
+                            true
+                        }
+                        requestImageRef(reply.obtainMessage())
+                        true
                     }
                     loadUrl(Uri.fromFile(page).toString())
                 }

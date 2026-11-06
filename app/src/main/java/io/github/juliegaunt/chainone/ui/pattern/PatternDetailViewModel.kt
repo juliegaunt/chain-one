@@ -1,5 +1,8 @@
 package io.github.juliegaunt.chainone.ui.pattern
 
+import kotlinx.coroutines.flow.update
+import java.io.IOException
+import io.github.juliegaunt.chainone.data.importer.SavedPageEditor
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.createSavedStateHandle
@@ -34,6 +37,10 @@ data class PatternDetailUiState(
     val tags: List<Tag> = emptyList(),
     /** The saved copy of the pattern's web page, if it was imported from one. */
     val savedPage: File? = null,
+    /** Goes up whenever the saved page's file changes, so the Web page tab reloads it. */
+    val savedPageVersion: Int = 0,
+    /** Parts of the saved page that are hidden (promotions, or pictures the person hid). */
+    val hiddenOnPage: Int = 0,
     val pdfs: List<PatternAttachment> = emptyList(),
     /** The library section the pattern is in; null is "Other". */
     val category: Category? = null,
@@ -54,30 +61,56 @@ class PatternDetailViewModel(
 ) : ViewModel() {
 
     private val patternId: Long = checkNotNull(savedStateHandle[ARG_PATTERN_ID])
-    private val isDeleted = MutableStateFlow(false)
+
+    /** What this screen changes itself: whether the pattern was deleted, and its saved page's edits. */
+    private data class Local(val isDeleted: Boolean = false, val pageVersion: Int = 0, val hiddenOnPage: Int = 0)
+
+    private val local = MutableStateFlow(Local())
 
     val uiState: StateFlow<PatternDetailUiState> = combine(
         repository.observePattern(patternId),
         repository.observeTagsFor(patternId),
         pdfRepository.observePdfs(patternId),
         categoryRepository.observeCategories(),
-        isDeleted,
-    ) { pattern, tags, pdfs, categories, deleted ->
+        local,
+    ) { pattern, tags, pdfs, categories, local ->
         PatternDetailUiState(
             pattern = pattern,
             cover = fileStore.coverFile(pattern?.coverImagePath),
             tags = tags,
             savedPage = pattern?.snapshotPath?.let(fileStore::resolve),
+            savedPageVersion = local.pageVersion,
+            hiddenOnPage = local.hiddenOnPage,
             pdfs = pdfs,
             category = pattern?.let { CategoryMatcher.categoryFor(it.title, it.categoryId, categories) },
             hasCategories = categories.isNotEmpty(),
             isLoading = false,
-            isDeleted = deleted,
+            isDeleted = local.isDeleted,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PatternDetailUiState())
 
     init {
         viewModelScope.launch { repository.markOpened(patternId) }
+        // Pages saved before promotions were hidden on import get tidied the first time they're opened.
+        editSavedPage { SavedPageEditor.tidyOnce(it) }
+    }
+
+    /** Hides a picture on the saved page, by its file name (such as "image-3.jpg"). */
+    fun hidePicture(fileName: String) = editSavedPage { SavedPageEditor.hidePicture(it, fileName) }
+
+    fun showHiddenOnPage() = editSavedPage { SavedPageEditor.showAll(it) }
+
+    private fun editSavedPage(change: suspend (File) -> Boolean) {
+        viewModelScope.launch {
+            val page = repository.getPattern(patternId)?.snapshotPath?.let(fileStore::resolve) ?: return@launch
+            val changed = try {
+                change(page)
+            } catch (e: IOException) {
+                false
+            }
+            val hidden = SavedPageEditor.hiddenCount(page)
+            local.update { it.copy(pageVersion = it.pageVersion + if (changed) 1 else 0, hiddenOnPage = hidden) }
+        }
     }
 
     fun toggleFavorite() {
@@ -102,7 +135,7 @@ class PatternDetailViewModel(
     fun delete() {
         viewModelScope.launch {
             repository.delete(patternId)
-            isDeleted.value = true
+            local.update { it.copy(isDeleted = true) }
         }
     }
 

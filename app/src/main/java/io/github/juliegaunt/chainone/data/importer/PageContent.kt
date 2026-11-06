@@ -64,7 +64,10 @@ internal object PageContent {
         return clean(copy).takeIf { it.text().isNotBlank() }
     }
 
-    /** Removes scripts, menus, sharing buttons, ads, comments and hidden parts from [root] (in place). */
+    /**
+     * Removes scripts, menus, sharing buttons, ads, comments and hidden parts from [root] (in place),
+     * and marks the page's own promotions ("buy the PDF", "pin it") hidden; see [Promotions].
+     */
     fun clean(root: Element): Element {
         root.select(JUNK_TAGS).forEach { if (it !== root) it.remove() }
         // WordPress puts category and tag names (e.g. "tag-social") in the article's own classes,
@@ -73,6 +76,7 @@ internal object PageContent {
         root.select("[class], [id], [style]").forEach { element ->
             if (element !== root && isJunk(element) && element.text().length <= majority) element.remove()
         }
+        Promotions.hideIn(root)
         return root
     }
 
@@ -127,6 +131,8 @@ internal object PageContent {
         }
 
         private fun visitElement(element: Element) {
+            // A hidden promotion ("Click here to buy the PDF") isn't part of the instructions.
+            if (element.hasAttr(Promotions.HIDDEN)) return
             val tag = element.normalName()
             when {
                 tag in HEADING_TAGS -> {

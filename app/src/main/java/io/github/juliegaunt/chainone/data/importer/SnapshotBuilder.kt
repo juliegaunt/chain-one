@@ -21,6 +21,8 @@ object SnapshotBuilder {
         .removeAttributes("colgroup", "width")
         .removeAttributes("td", "width")
         .removeAttributes("th", "width")
+        // Promotions are kept but hidden, so they can be shown again.
+        .addAttributes(":all", Promotions.HIDDEN)
 
     private val STYLE = """
         :root { color-scheme: light dark; }
@@ -63,6 +65,7 @@ object SnapshotBuilder {
             appendElement("title").text(title)
             appendElement("style").appendChild(DataNode(STYLE))
         }
+        SavedPageEditor.prepare(page)
         page.body().appendElement("header").apply {
             appendElement("h1").text(title)
             appendElement("p").appendElement("a").attr("href", sourceUrl).text(caption)

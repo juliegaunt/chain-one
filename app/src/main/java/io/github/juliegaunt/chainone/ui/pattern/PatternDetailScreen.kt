@@ -76,6 +76,7 @@ fun PatternDetailScreen(
     val counters by counterViewModel.uiState.collectAsStateWithLifecycle()
     var showMenu by rememberSaveable { mutableStateOf(false) }
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
+    var hidingPicture by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedTab by rememberSaveable { mutableStateOf<DetailTab?>(null) }
     var selectedPdfId by rememberSaveable { mutableStateOf<Long?>(null) }
 
@@ -117,6 +118,15 @@ fun PatternDetailScreen(
                                 Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.action_more))
                             }
                             DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                                if (state.savedPage != null && state.hiddenOnPage > 0) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.saved_page_show_hidden)) },
+                                        onClick = {
+                                            showMenu = false
+                                            viewModel.showHiddenOnPage()
+                                        },
+                                    )
+                                }
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.action_delete)) },
                                     onClick = {
@@ -200,7 +210,14 @@ fun PatternDetailScreen(
                                     onRowTap = { row -> counterViewModel.jumpToRow(row.from, row.section) },
                                     modifier = Modifier.weight(1f),
                                 )
-                                DetailTab.WEB_PAGE -> state.savedPage?.let { SavedPageView(it, Modifier.weight(1f)) }
+                                DetailTab.WEB_PAGE -> state.savedPage?.let {
+                                    SavedPageView(
+                                        page = it,
+                                        version = state.savedPageVersion,
+                                        onPictureLongPress = { fileName -> hidingPicture = fileName },
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                }
                                 else -> PdfTab(
                                     pdfs = state.pdfs,
                                     selectedId = selectedPdfId,
@@ -227,6 +244,16 @@ fun PatternDetailScreen(
                 }
             }
         }
+    }
+
+    hidingPicture?.let { fileName ->
+        ConfirmDialog(
+            title = stringResource(R.string.saved_page_hide_title),
+            text = stringResource(R.string.saved_page_hide_message),
+            confirmLabel = stringResource(R.string.saved_page_hide),
+            onConfirm = { viewModel.hidePicture(fileName) },
+            onDismiss = { hidingPicture = null },
+        )
     }
 
     if (confirmDelete && pattern != null) {
