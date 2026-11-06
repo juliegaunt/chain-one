@@ -49,7 +49,7 @@ import io.github.juliegaunt.chainone.ui.components.labelRes
 import io.github.juliegaunt.chainone.ui.library.LibraryViewModel
 import java.io.File
 
-/** The pattern at a glance: photo, title, status, tags, hook and yarn, materials, notes and source link. */
+/** The pattern at a glance: photo, title, category, tags, status, hook and yarn, materials, notes and source link. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun OverviewTab(
@@ -91,10 +91,9 @@ fun OverviewTab(
                 }
             }
 
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                StatusPicker(pattern.status, onStatusChange)
-                if (hasCategories) {
-                    // Tapping the category opens the library at that section.
+            if (hasCategories) {
+                // Tapping the category opens the library at that section.
+                LabeledChips(stringResource(R.string.field_category)) {
                     AssistChip(
                         onClick = { onShowSection(LibraryViewModel.sectionKey(category)) },
                         label = { Text(category?.name ?: stringResource(R.string.library_other)) },
@@ -104,12 +103,14 @@ fun OverviewTab(
 
             if (tags.isNotEmpty()) {
                 // Tapping a tag shows the library's other patterns with it.
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                LabeledChips(stringResource(R.string.field_tags)) {
                     tags.forEach { tag ->
                         AssistChip(onClick = { onShowTag(tag.id) }, label = { Text(tag.name) })
                     }
                 }
             }
+
+            StatusPicker(pattern.status, onStatusChange)
 
             if (pattern.hookSize.isNotBlank() || pattern.yarnWeight.isNotBlank()) {
                 Row(horizontalArrangement = Arrangement.spacedBy(32.dp)) {
@@ -156,6 +157,16 @@ private fun Fact(label: String, value: String) {
     Column {
         Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(value, style = MaterialTheme.typography.titleMedium)
+    }
+}
+
+/** Chips under a small gray label, like [Fact]'s: "Category" over its chip, "Tags" over the tags. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun LabeledChips(label: String, chips: @Composable () -> Unit) {
+    Column {
+        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) { chips() }
     }
 }
 
