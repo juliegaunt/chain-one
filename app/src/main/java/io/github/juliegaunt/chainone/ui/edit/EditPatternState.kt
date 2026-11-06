@@ -118,12 +118,19 @@ data class EditPatternUiState(
     val hasChanges: Boolean
         get() = form != initialForm || pickedCover != null || removeCover || pdfs != initialPdfs || tagInput.isNotBlank()
 
-    /** Existing tags matching what's typed (or, before typing, any), leaving out ones already added. */
+    /**
+     * Existing tags matching what's being typed, leaving out ones already added; none until
+     * something is typed. Tags starting with the text come before ones that only contain it.
+     */
     val tagSuggestions: List<String>
-        get() = allTags
-            .filter { tag -> form.tags.none { it.equals(tag, ignoreCase = true) } }
-            .filter { it.contains(tagInput.trim(), ignoreCase = true) }
-            .take(MAX_SUGGESTIONS)
+        get() {
+            val typed = tagInput.trim()
+            if (typed.isEmpty()) return emptyList()
+            return allTags
+                .filter { tag -> tag.contains(typed, ignoreCase = true) && form.tags.none { it.equals(tag, ignoreCase = true) } }
+                .sortedBy { !it.startsWith(typed, ignoreCase = true) }
+                .take(MAX_SUGGESTIONS)
+        }
 
     private companion object {
         const val MAX_SUGGESTIONS = 8
