@@ -10,17 +10,15 @@ A personal crochet pattern library for Android, with a built-in row counter.
 
 ## Features
 
-| Feature | Status |
-|---|---|
-| Library (grid or list) with cover photos and favorites | ✅ |
-| Add and edit patterns by hand | ✅ |
-| Import from a web page (paste a link or share from the browser), with an offline copy of the page | ✅ |
-| Search, tags, status filters | ✅ |
-| Categories: the library in foldable sections, sorted by the words in each title | ✅ |
-| Row/stitch counters inside each pattern (repeat counters, undo, volume-button counting) | ✅ |
-| The instructions highlight the row the counter is on (tap a row to jump there) | ✅ |
-| Import and view PDFs, with a movable row marker | ✅ |
-| Backup and restore to a single zip file | ✅ |
+- Library (grid or list) with cover photos and favorites
+- Add and edit patterns by hand
+- Import from a web page (paste a link or share from the browser), with an offline copy of the page
+- Search, tags, status filters
+- Categories: the library in foldable sections, sorted by the words in each title
+- Row/stitch counters inside each pattern (repeat counters, undo, volume-button counting)
+- The instructions highlight the row the counter is on (tap a row to jump there)
+- Import and view PDFs, with a movable row marker
+- Backup and restore to a single zip file
 
 ## Building
 
