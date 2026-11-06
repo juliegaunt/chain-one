@@ -30,7 +30,7 @@ import io.github.juliegaunt.chainone.data.repository.repeatProgress
 
 /**
  * The slim counter along the bottom of the Instructions, Web page and PDF tabs, for counting while
- * reading. Works before any counter exists: the first tap of + creates "Row".
+ * reading. It appears once counting has started on the Counter tab ([CounterUiState.isStarted]).
  */
 @Composable
 fun CounterBar(

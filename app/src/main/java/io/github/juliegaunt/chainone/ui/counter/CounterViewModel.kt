@@ -28,6 +28,9 @@ data class CounterUiState(
 ) {
     /** The first counter: the one on the counter bar and the volume buttons. */
     val main: Counter? get() = counters.firstOrNull()
+
+    /** True once counting has begun: a counter is above 0. Until then the other tabs leave the counter out. */
+    val isStarted: Boolean get() = counters.any { it.value > 0 }
 }
 
 /** The counters of the pattern whose page is open. */

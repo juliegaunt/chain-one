@@ -184,9 +184,11 @@ fun PatternDetailScreen(
                     } else {
                         PrimaryScrollableTabRow(selectedTabIndex = tabs.indexOf(currentTab), edgePadding = 0.dp, tabs = tabContent)
                     }
-                    // A counter is on screen on these tabs: the Counter tab itself, or the bar under the others.
+                    // A counter is on screen on these tabs: the Counter tab itself, or the bar under the
+                    // reading tabs once counting has started.
+                    val showCounterBar = counters.isStarted
                     CountingEffects(
-                        active = currentTab != DetailTab.OVERVIEW,
+                        active = currentTab == DetailTab.COUNTER || (currentTab != DetailTab.OVERVIEW && showCounterBar),
                         state = counters,
                         onVolumeUp = counterViewModel::incrementMain,
                         onVolumeDown = counterViewModel::decrementMain,
@@ -228,13 +230,15 @@ fun PatternDetailScreen(
                                     modifier = Modifier.weight(1f),
                                 )
                             }
-                            CounterBar(
-                                counter = counters.main,
-                                defaultName = stringResource(R.string.counter_default_name),
-                                onIncrement = counterViewModel::incrementMain,
-                                onDecrement = counterViewModel::decrementMain,
-                                onOpen = { selectedTab = DetailTab.COUNTER },
-                            )
+                            if (showCounterBar) {
+                                CounterBar(
+                                    counter = counters.main,
+                                    defaultName = stringResource(R.string.counter_default_name),
+                                    onIncrement = counterViewModel::incrementMain,
+                                    onDecrement = counterViewModel::decrementMain,
+                                    onOpen = { selectedTab = DetailTab.COUNTER },
+                                )
+                            }
                         }
                         DetailTab.COUNTER -> {
                             LaunchedEffect(Unit) { counterViewModel.ensureCounter() }
