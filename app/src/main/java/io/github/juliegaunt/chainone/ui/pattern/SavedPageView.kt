@@ -13,6 +13,7 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import java.io.ByteArrayInputStream
@@ -26,8 +27,8 @@ import java.io.File
 @Composable
 fun SavedPageView(page: File, version: Int, onPictureLongPress: (fileName: String) -> Unit, modifier: Modifier = Modifier) {
     val longPress by rememberUpdatedState(onPictureLongPress)
-    // A new version (a picture hidden or shown) loads the page afresh.
-    key(page, version) {
+    key(page) {
+        val reload = remember { Reload(version) }
         AndroidView(
             factory = { context ->
                 WebView(context).apply {
@@ -39,6 +40,15 @@ fun SavedPageView(page: File, version: Int, onPictureLongPress: (fileName: Strin
                     settings.builtInZoomControls = true
                     settings.displayZoomControls = false
                     webViewClient = object : WebViewClient() {
+                        override fun onPageFinished(view: WebView, url: String?) {
+                            val y = reload.scrollY ?: return
+                            reload.scrollY = null
+                            // After the reloaded page has been laid out, back to where the reader was.
+                            view.postVisualStateCallback(0, object : WebView.VisualStateCallback() {
+                                override fun onComplete(requestId: Long) = view.scrollTo(0, y)
+                            })
+                        }
+
                         // The page and its photos only: a page (from a tampered backup, say) can't
                         // show the app's other files, such as its database.
                         override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? =
@@ -71,11 +81,22 @@ fun SavedPageView(page: File, version: Int, onPictureLongPress: (fileName: Strin
                     loadUrl(Uri.fromFile(page).toString())
                 }
             },
+            // A new version (a picture hidden or shown) reloads the page in place, keeping the reader's spot.
+            update = { view ->
+                if (reload.version != version) {
+                    reload.version = version
+                    reload.scrollY = view.scrollY
+                    view.reload()
+                }
+            },
             onRelease = { it.destroy() },
             modifier = modifier,
         )
     }
 }
+
+/** The page version a [SavedPageView] has loaded, and where to scroll once a reload of it finishes. */
+private class Reload(var version: Int, var scrollY: Int? = null)
 
 /** True for a `file:` address inside [folder]. Anything else (another folder, `content:`, `data:`) is refused. */
 internal fun isInsideFolder(folder: File?, url: Uri): Boolean {
